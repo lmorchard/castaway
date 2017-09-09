@@ -1,8 +1,8 @@
-var hello = require('./lib/core').default;
+let hello = require('./lib/core').default;
 
 import './index.css';
 
-const world = {};
+// const world = {};
 
 let count = 0;
 function update () {
@@ -13,7 +13,7 @@ function update () {
 setTimeout(update, 16);
 
 if (module.hot) {
-  module.hot.accept('./lib/core.js', function (loaded) {
+  module.hot.accept('./lib/core.js', function (/* loaded */) {
     hello = require('./lib/core.js').default;
   });
 }

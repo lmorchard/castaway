@@ -44,11 +44,7 @@ module.exports = [
         {
           test: /\.(js|jsx)/,
           exclude: /node_modules/,
-          loader: 'babel-loader',
-          options: {
-            babelrc: false,
-            presets: [['env', { modules: false }]]
-          }
+          loader: 'babel-loader'
         }
       ]
     },
