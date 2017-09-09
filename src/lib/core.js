@@ -1,3 +1,3 @@
 export default function hello() {
-  return 'hello world';
+  return 'this will be neat for tweaking games';
 }

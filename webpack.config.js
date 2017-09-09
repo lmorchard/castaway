@@ -31,9 +31,11 @@ module.exports = [
       contentBase: 'dist',
       hot: true
     },
+    /*
     watchOptions: {
-      aggregateTimeout: IS_GLITCH ? 1000 : 0
+      aggregateTimeout: IS_GLITCH ? 100 : 0
     },
+    */
     devtool: 'source-map',
     module: {
       rules: [
