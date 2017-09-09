@@ -32,7 +32,7 @@ module.exports = [
       hot: true
     },
     watchOptions: {
-      aggregateTimeout: IS_GLITCH ? 1000 : 0
+      aggregateTimeout: IS_GLITCH ? 500 : 0
     },
     devtool: 'source-map',
     module: {
