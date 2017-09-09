@@ -1,4 +1,3 @@
-/* eslint-env node, mocha */
 import { expect } from 'chai';
 import core from '../src/lib/core';
 

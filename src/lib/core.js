@@ -10,7 +10,6 @@ export const World = {
   pause (state) { },
   resume (state) { },
   reset (state) { },
-  start (state) { },
 
   tickLoop(state) { },
   tick(state, timeDeltaMS) { },
