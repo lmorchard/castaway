@@ -23,7 +23,7 @@ describe('core', () => {
   });
 
   describe('World', () => {
-    const { World, Component } = core;
+    const { World, System, Component } = core;
 
     it('should exist', () => expect(World).to.exist);
 
@@ -33,6 +33,35 @@ describe('core', () => {
         ['world', 'systems', 'components', 'runtime']
           .forEach(name => expect(state).to.have.property(name));
         expect(state.world.lastEntityId).to.equal(0);
+      });
+    });
+
+    describe('configureSystems()', () => {
+      it('should populate system configuration', () => {
+        const state = World.initialize();
+        const example1 = System({
+          configure: config => Object.assign({
+            foo: 'yay', bar: 'rab'
+          }, config)
+        });
+        const example2 = System({
+          configure: config => Object.assign({
+            quux: 'zork', info: 'com'
+          }, config)
+        });
+        World.installPlugins(state, [
+          { systems: { example1, example2 } }
+        ]);
+        World.configureSystems(state, [
+          { name: 'example1', foo: 'bar' },
+          { name: 'example1', bar: 'frotz' },
+          { name: 'example2', quux: 'xyzzy' }
+        ]);
+        expect(state.systems).to.deep.equal(
+          [ { foo: 'bar', bar: 'rab', name: 'example1' },
+            { foo: 'yay', bar: 'frotz', name: 'example1' },
+            { quux: 'xyzzy', info: 'com', name: 'example2' } ]
+        );
       });
     });
 
@@ -60,12 +89,8 @@ describe('core', () => {
             { name: 'example2', opt: 'third' }
           ]
         });
-        const example1 = {
-          start: sinon.spy(),
-        };
-        const example2 = {
-          start: sinon.spy(),
-        };
+        const example1 = { start: sinon.spy(), };
+        const example2 = { start: sinon.spy(), };
         World.installPlugins(state, [
           { systems: { example1, example2 } }
         ]);

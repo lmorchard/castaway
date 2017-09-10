@@ -1,18 +1,11 @@
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
-
-const requestAnimationFrame =
-  window.requestAnimationFrame ||
-  window.webkitRequestAnimationFrame ||
-  window.mozRequestAnimationFrame ||
-  window.oRequestAnimationFrame ||
-  window.msRequestAnimationFrame ||
-  function (fn) { setTimeout(fn, (1000/60)); };
+const MAX_UPDATE_CATCHUP_FRAMES = 5;
 
 export const World = {
 
-  initialize (state = {}) {
-    return World.reset(
+  initialize (initialState = {}) {
+    return World.resetRuntime(
       Object.assign({}, {
         world: {
           debug: false,
@@ -20,15 +13,16 @@ export const World = {
         },
         systems: [],
         components: {},
-        runtime: {
+        runtime: {},
+        modules: {
           systems: {},
           components: {}
         }
-      }, state)
+      }, initialState)
     );
   },
 
-  reset (state) {
+  resetRuntime (state) {
     Object.assign(state.runtime, {
       isRunning: false,
       isPaused: false,
@@ -39,14 +33,21 @@ export const World = {
     return state;
   },
 
+  configureSystems (state, config) {
+    const systems = state.modules.systems;
+    state.systems = config.map(item => item.name in systems
+      ? systems[item.name].configure(item)
+      : item);
+  },
+
   start (state) {
     const { runtime } = state;
 
     if (runtime.isRunning) { return; }
-    World.reset(state);
+    World.resetRuntime(state);
     runtime.isRunning = true;
 
-    const systems = state.runtime.systems;
+    const systems = state.modules.systems;
     let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
       systemState = state.systems[i];
@@ -91,7 +92,7 @@ export const World = {
     const timeNow = Date.now();
     const timeDelta = Math.min(
       timeNow - runtime.lastUpdateTime,
-      TARGET_DURATION * 5
+      TARGET_DURATION * MAX_UPDATE_CATCHUP_FRAMES
     );
     runtime.lastUpdateTime = timeNow;
     if (!runtime.isPaused) {
@@ -107,7 +108,7 @@ export const World = {
 
   update(state, timeDeltaMS) {
     const timeDelta = timeDeltaMS / 1000;
-    const systems = state.runtime.systems;
+    const systems = state.modules.systems;
     let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
       systemState = state.systems[i];
@@ -130,7 +131,7 @@ export const World = {
 
   draw(state, timeDeltaMS) {
     const timeDelta = timeDeltaMS / 1000;
-    const systems = state.runtime.systems;
+    const systems = state.modules.systems;
     let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
       systemState = state.systems[i];
@@ -143,14 +144,14 @@ export const World = {
     plugins.forEach(module =>
       ['systems', 'components'].forEach(type =>
         Object.keys(module[type] || {}).forEach(name =>
-          state.runtime[type][name] = module[type][name]
+          state.modules[type][name] = module[type][name]
         )
       )
     );
   },
 
   addComponent (state, entityId, componentName, componentAttrs = {}) {
-    const componentModule = state.runtime.components[componentName];
+    const componentModule = state.modules.components[componentName];
     const componentData = componentModule.create(componentAttrs);
     if (!state.components[componentName]) {
       state.components[componentName] = {};
@@ -211,6 +212,7 @@ export const World = {
 
 export function System (impl) {
   return Object.assign({
+    configure(config) { return config; },
     start(/* state, systemState */) {},
     update(/* state, systemState, timeDelta */) {},
     draw(/* state, systemState, timeDelta */) {},

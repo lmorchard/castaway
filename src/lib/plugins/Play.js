@@ -28,7 +28,13 @@ const PlaySystem = System({
         el.id = counter.id;
         document.body.appendChild(el);
       }
-      el.innerText = `* ${systemState.label} ${counter.id} = ${Math.floor(counter.count)} ${Math.floor(timeDelta * 10000) / 10}`;
+      el.innerText = [
+        systemState.label,
+        counter.id,
+        ':',
+        Math.floor(counter.count),
+        Math.floor(timeDelta * 10000) / 10
+      ].join(' ');
     }
   }
 
