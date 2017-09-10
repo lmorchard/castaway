@@ -20,7 +20,9 @@ if (module.hot) {
 }
 
 World.configureSystems(state, [
-  { name: 'Play' }
+  'Play',
+  'Position',
+  'Motion'
 ]);
 
 World.insert(state,

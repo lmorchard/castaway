@@ -49,12 +49,16 @@ describe('core', () => {
           { systems: { example1, example2 } }
         ]);
         World.configureSystems(state, [
-          { name: 'example1', foo: 'bar' },
-          { name: 'example1', bar: 'frotz' },
-          { name: 'example2', quux: 'xyzzy' }
+          'example1',
+          'example2',
+          [ 'example1', { foo: 'bar' } ],
+          [ 'example1', { bar: 'frotz' } ],
+          [ 'example2', { quux: 'xyzzy' } ]
         ]);
         expect(state.systems).to.deep.equal(
-          [ { foo: 'bar', bar: 'rab', name: 'example1' },
+          [ { foo: 'yay', bar: 'rab', name: 'example1' },
+            { quux: 'zork', info: 'com', name: 'example2' },
+            { foo: 'bar', bar: 'rab', name: 'example1' },
             { foo: 'yay', bar: 'frotz', name: 'example1' },
             { quux: 'xyzzy', info: 'com', name: 'example2' } ]
         );
@@ -255,6 +259,9 @@ describe('core', () => {
           8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
           9035768: { prop1: 'a', prop2: 'b' }
         });
+      });
+      it('should return an empty object if no components of type exist', () => {
+        expect(World.get(readOnlyState, 'notacomponent')).to.deep.equal({});
       });
     });
 

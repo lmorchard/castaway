@@ -35,9 +35,17 @@ export const World = {
 
   configureSystems (state, config) {
     const systems = state.modules.systems;
-    state.systems = config.map(item => item.name in systems
-      ? systems[item.name].configure(item)
-      : item);
+    state.systems = config.map(item => {
+      if (typeof item === 'string') {
+        item = { name: item };
+      } else {
+        item = { name: item[0], ...item[1] };
+      }
+      return item.name in systems
+        ? systems[item.name].configure(item)
+        : item;
+    });
+
   },
 
   start (state) {
@@ -175,7 +183,7 @@ export const World = {
 
   getComponent (state, componentName, entityId) {
     if (!state.components[componentName]) {
-      return null;
+      return {};
     } else if (!entityId) {
       return state.components[componentName];
     } else {
