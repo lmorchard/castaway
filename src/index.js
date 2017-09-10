@@ -11,6 +11,14 @@ function updatePlugins() {
 }
 updatePlugins();
 
+if (module.hot) {
+  module.hot.accept(plugins.id, updatePlugins);
+  module.hot.accept('./lib/core', () => {
+    ({ World } = require('./lib/core'));
+    World.restart(state);
+  });
+}
+
 World.configureSystems(state, [
   { name: 'Play' }
 ]);
@@ -23,11 +31,3 @@ World.insert(state,
 );
 
 World.start(state);
-
-if (module.hot) {
-  module.hot.accept(plugins.id, updatePlugins);
-  module.hot.accept('./lib/core', () => {
-    ({ World } = require('./lib/core'));
-    World.restart(state);
-  });
-}
