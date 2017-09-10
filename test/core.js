@@ -40,14 +40,10 @@ describe('core', () => {
       it('should populate system configuration', () => {
         const state = World.initialize();
         const example1 = System({
-          configure: config => Object.assign({
-            foo: 'yay', bar: 'rab'
-          }, config)
+          configure: config => ({ foo: 'yay', bar: 'rab', ...config })
         });
         const example2 = System({
-          configure: config => Object.assign({
-            quux: 'zork', info: 'com'
-          }, config)
+          configure: config => ({ quux: 'zork', info: 'com', ...config })
         });
         World.installPlugins(state, [
           { systems: { example1, example2 } }

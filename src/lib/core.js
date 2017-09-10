@@ -210,25 +210,25 @@ export const World = {
 
 };
 
-export function System (impl) {
-  return Object.assign({
-    configure(config) { return config; },
-    start(/* state, systemState */) {},
-    update(/* state, systemState, timeDelta */) {},
-    draw(/* state, systemState, timeDelta */) {},
-  }, impl);
-}
+export const System = impl => ({
+  configure(config) { return config; },
+  start(/* state, systemState */) {},
+  update(/* state, systemState, timeDelta */) {},
+  draw(/* state, systemState, timeDelta */) {},
+  ...impl
+});
 
-export function Component (impl) {
-  return Object.assign({
-    defaults() { return {}; },
-    create(attrs) {
-      return Object.assign(
-        this.defaults(),
-        (attrs || {})
-      );
-    }
-  }, impl);
-}
+export const Component = impl => ({
+  defaults() {
+    return {};
+  },
+  create(attrs = {}) {
+    return {
+      ...this.defaults(),
+      ...attrs
+    };
+  },
+  ...impl
+});
 
 export default { World, System, Component };
