@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm-run-all --parallel start test:watch lint:watch",
     "start": "NODE_ENV=development webpack-dev-server",
-    "build": "NODE_ENV=production webpack",
+    "build": "webpack -p",
     "lint": "eslint --color src test",
     "lint:watch": "onchange -p -v \"src/**/*.js\" \"test/**/*.js\" -- npm run lint",
     "test": "mocha --colors --compilers js:babel-core/register --require test-setup.js --recursive",
