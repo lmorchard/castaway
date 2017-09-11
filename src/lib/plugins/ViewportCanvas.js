@@ -1,5 +1,7 @@
 const { World, System, Component } = require('../core');
 
+const PI2 = Math.PI * 2;
+
 const CanvasSprite = Component({
   defaults: () => ({
     name: 'default',
@@ -145,9 +147,6 @@ const ViewportCanvasSystem = System({
     const position = World.get(state, 'Position', entityId);
     if (!position) { return; }
 
-    let spriteFn = getSprite(sprite.name);
-    if (!spriteFn) { spriteFn = getSprite('default'); }
-
     ctx.save();
     ctx.translate(position.x, position.y);
     ctx.rotate(position.rotation + Math.PI/2);
@@ -156,175 +155,49 @@ const ViewportCanvasSystem = System({
     // simulate a vector display
     ctx.lineWidth = systemState.lineWidth / systemState.zoom / (sprite.size / 100);
     ctx.strokeStyle = sprite.color;
-    spriteFn(ctx, timeDelta, sprite, entityId, state);
+    try {
+      getSprite(sprite.name)(ctx, timeDelta, sprite, entityId, state);
+    } catch (e) {
+      Math.random() < 0.01 && console.error('sprite draw error', e);
+      getSprite('default')(ctx, timeDelta, sprite, entityId, state);
+    }
     ctx.restore();
   }
 });
 
-const spriteRegistry = {};
-export function registerSprite(name, sprite) {
-  spriteRegistry[name] = sprite;
-}
-export function getSprite(name) {
-  return spriteRegistry[name];
-}
-
-const PI2 = Math.PI * 2;
-
-registerSprite('default', (ctx) => {
-  ctx.beginPath();
-  ctx.arc(0, 0, 50, 0, PI2, true);
-  ctx.moveTo(0, 0);
-  ctx.lineTo(0, -50);
-  ctx.moveTo(0, 0);
-  ctx.stroke();
-});
-
-registerSprite('sun', (ctx) => {
-  ctx.beginPath();
-  ctx.arc(0, 0, 50, 0, PI2, true);
-  ctx.stroke();
-});
-
-registerSprite('enemyscout', (ctx) => {
-  ctx.beginPath();
-  ctx.moveTo(0, -50);
-  ctx.lineTo(-45, 50);
-  ctx.lineTo(-12.5, 12.5);
-  ctx.lineTo(0, 25);
-  ctx.lineTo(12.5, 12.5);
-  ctx.lineTo(45, 50);
-  ctx.lineTo(0, -50);
-  ctx.moveTo(0, -50);
-  ctx.stroke();
-});
-
-registerSprite('hero', (ctx) => {
-  ctx.rotate(Math.PI);
-  ctx.beginPath();
-  ctx.moveTo(-12.5, -50);
-  ctx.lineTo(-25, -50);
-  ctx.lineTo(-50, 0);
-  ctx.arc(0, 0, 50, Math.PI, 0, true);
-  ctx.lineTo(25, -50);
-  ctx.lineTo(12.5, -50);
-  ctx.lineTo(25, 0);
-  ctx.arc(0, 0, 25, 0, Math.PI, true);
-  ctx.lineTo(-12.5, -50);
-  ctx.stroke();
-});
-
-registerSprite('asteroid', (ctx, timeDelta, sprite) => {
-  let idx;
-
-  if (!sprite.points) {
-    const NUM_POINTS = 7 + Math.floor(8 * Math.random());
-    const MAX_RADIUS = 50;
-    const MIN_RADIUS = 35;
-    const ROTATION = PI2 / NUM_POINTS;
-
-    sprite.points = [];
-    for (idx = 0; idx < NUM_POINTS; idx++) {
-      const rot = idx * ROTATION;
-      const dist = (Math.random() * (MAX_RADIUS - MIN_RADIUS)) + MIN_RADIUS;
-      sprite.points.push([dist * Math.cos(rot), dist * Math.sin(rot)]);
-    }
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(sprite.points[0][0], sprite.points[0][1]);
-  for (idx = 0; idx < sprite.points.length; idx++) {
-    ctx.lineTo(sprite.points[idx][0], sprite.points[idx][1]);
-  }
-  ctx.lineTo(sprite.points[0][0], sprite.points[0][1]);
-  ctx.stroke();
-
-});
-
-registerSprite('explosion', (ctx, timeDelta, sprite) => {
-  let p, idx;
-
-  if (!sprite.initialized) {
-
-    sprite.initialized = true;
-
-    Object.assign(sprite, {
-      ttl: 2.0,
-      radius: 100,
-      maxParticles: 25,
-      maxParticleSize: 4,
-      maxVelocity: 300,
-      color: '#f00',
-      age: 0,
-      stop: false,
-      ...sprite
-    });
-
-    sprite.particles = [];
-
-    for (idx = 0; idx < sprite.maxParticles; idx++) {
-      sprite.particles.push({ free: true });
-    }
-
-  }
-
-  for (idx = 0; idx < sprite.particles.length; idx++) {
-    p = sprite.particles[idx];
-
-    if (!sprite.stop && p.free) {
-
-      p.velocity = sprite.maxVelocity * Math.random();
-      p.angle = (Math.PI * 2) * Math.random();
-      p.dx = 0 - (p.velocity * Math.sin(p.angle));
-      p.dy = p.velocity * Math.cos(p.angle);
-      p.distance = p.x = p.y = 0;
-      p.maxDistance = sprite.radius * Math.random();
-      p.size = sprite.maxParticleSize;
-      p.free = false;
-
-    } else if (!p.free) {
-
-      p.x += p.dx * timeDelta;
-      p.y += p.dy * timeDelta;
-
-      p.distance += p.velocity * timeDelta;
-      if (p.distance >= p.maxDistance) {
-        p.distance = p.maxDistance;
-        p.free = true;
-      }
-
-    }
-
-  }
-
-  sprite.age += timeDelta;
-
-  if (sprite.age >= sprite.ttl) {
-    sprite.stop = true;
-  }
-
-  const alpha = Math.max(0, 1 - (sprite.age / sprite.ttl));
-
-  ctx.save();
-  ctx.strokeStyle = sprite.color;
-  ctx.fillStyle = sprite.color;
-
-  for (idx = 0; idx < sprite.particles.length; idx++) {
-    p = sprite.particles[idx];
-    if (p.free) { continue; }
-
-    ctx.globalAlpha = (1 - (p.distance / p.maxDistance)) * alpha;
-
+const spriteRegistry = {
+  default: ctx => {
     ctx.beginPath();
+    ctx.arc(0, 0, 50, 0, PI2, true);
     ctx.moveTo(0, 0);
-    ctx.lineWidth = p.size;
-    ctx.lineTo(p.x, p.y);
+    ctx.lineTo(0, -50);
+    ctx.moveTo(0, 0);
     ctx.stroke();
   }
+};
 
-  ctx.restore();
+export const getSprite = name =>
+  spriteRegistry[name] || spriteRegistry.default;
 
-});
+let spriteModulesContext;
+function updateSpriteModules () {
+  spriteModulesContext = require.context('./CanvasSprites', false, /\.js$/);
+  spriteModulesContext.keys().forEach(key => Object.assign(
+    spriteRegistry,
+    spriteModulesContext(key).sprites
+  ));
+}
+updateSpriteModules();
+
+if (module.hot) {
+  module.hot.accept(spriteModulesContext.id, () => {
+    try { updateSpriteModules(); }
+    catch (e) {
+      // eslint-disable-next-line no-console
+      console.log('sprite reload', e);
+    }
+  });
+}
 
 export const components = { CanvasSprite: CanvasSprite };
 export const systems = { ViewportCanvas: ViewportCanvasSystem };

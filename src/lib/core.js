@@ -71,11 +71,7 @@ export const World = {
 
     // Fire up the update loop timer
     const updateFn = () => {
-      try { World.updateLoop(state); }
-      catch (e) {
-        // eslint-disable-next-line no-console
-        console.error(e);
-      }
+      World.updateLoop(state);
       if (runtime.isRunning) {
         runtime.updateTimer = setTimeout(updateFn, TARGET_DURATION);
       }
@@ -84,11 +80,7 @@ export const World = {
 
     // Fire up the draw loop animation frames
     const drawFn = (timestamp) => {
-      try { World.drawLoop(state, timestamp); }
-      catch (e) {
-        // eslint-disable-next-line no-console
-        console.error(e);
-      }
+      World.drawLoop(state, timestamp);
       if (runtime.isRunning) {
         runtime.drawFrame = requestAnimationFrame(drawFn);
       }
@@ -155,8 +147,12 @@ export const World = {
     for (j = 0; j < UPDATE_METHODS.length; j++) {
       method = UPDATE_METHODS[j];
       for (i = 0; i < state.systems.length; i++) {
-        systemState = state.systems[i];
-        systems[systemState.name][method](state, systemState, timeDelta);
+        try {
+          systemState = state.systems[i];
+          systems[systemState.name][method](state, systemState, timeDelta);
+        } catch (e) {
+          Math.random() < 0.01 && console.error('update step', e);
+        }
       }
     }
   },
@@ -167,8 +163,12 @@ export const World = {
     for (j = 0; j < DRAW_METHODS.length; j++) {
       method = DRAW_METHODS[j];
       for (i = 0; i < state.systems.length; i++) {
-        systemState = state.systems[i];
-        systems[systemState.name][method](state, systemState, timeDelta);
+        try {
+          systemState = state.systems[i];
+          systems[systemState.name][method](state, systemState, timeDelta);
+        } catch (e) {
+          Math.random() < 0.01 && console.error('draw step', e);
+        }
       }
     }
   },

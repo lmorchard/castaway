@@ -9,7 +9,7 @@ state.world.debug = true;
 
 let plugins;
 function updatePlugins() {
-  plugins = require.context('./lib/plugins', true, /\.js$/);
+  plugins = require.context('./lib/plugins', false, /\.js$/);
   World.installPlugins(state, plugins.keys().map(key => plugins(key)));
 }
 updatePlugins();
