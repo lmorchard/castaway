@@ -2,6 +2,11 @@ const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
 const MAX_UPDATE_CATCHUP_FRAMES = 5;
 
+const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
+const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
+
+let i, j, method, systems, systemState, timeNow, timeDelta;
+
 export const World = {
 
   initialize (initialState = {}) {
@@ -23,13 +28,13 @@ export const World = {
   },
 
   resetRuntime (state) {
-    Object.assign(state.runtime, {
+    state.runtime = {
       isRunning: false,
       isPaused: false,
       lastUpdateTime: Date.now(),
       updateAccumulator: 0,
       lastDrawTime: 0
-    });
+    };
     return state;
   },
 
@@ -49,12 +54,14 @@ export const World = {
   },
 
   start (state) {
-    const { runtime } = state;
-
-    if (runtime.isRunning) { return; }
+    // Bail if we're already running, otherwise reset the runtime
+    if (state.runtime.isRunning) { return; }
     World.resetRuntime(state);
+
+    const { runtime } = state;
     runtime.isRunning = true;
 
+    // Allow all the systems to start
     const systems = state.modules.systems;
     let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
@@ -62,16 +69,26 @@ export const World = {
       systems[systemState.name].start(state, systemState);
     }
 
+    // Fire up the update loop timer
     const updateFn = () => {
-      World.updateLoop(state);
+      try { World.updateLoop(state); }
+      catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
       if (runtime.isRunning) {
         runtime.updateTimer = setTimeout(updateFn, TARGET_DURATION);
       }
     };
     runtime.updateTimer = setTimeout(updateFn, TARGET_DURATION);
 
+    // Fire up the draw loop animation frames
     const drawFn = (timestamp) => {
-      World.drawLoop(state, timestamp);
+      try { World.drawLoop(state, timestamp); }
+      catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
       if (runtime.isRunning) {
         runtime.drawFrame = requestAnimationFrame(drawFn);
       }
@@ -84,6 +101,14 @@ export const World = {
     runtime.isRunning = false;
     if (runtime.updateTimer) { clearTimeout(runtime.updateTimer); }
     if (runtime.drawFrame) { cancelAnimationFrame(runtime.drawFrame); }
+
+    // Allow all the systems to stop
+    const systems = state.modules.systems;
+    let i, systemState;
+    for (i = 0; i < state.systems.length; i++) {
+      systemState = state.systems[i];
+      systems[systemState.name].stop(state, systemState);
+    }
   },
 
   restart (state) {
@@ -96,55 +121,55 @@ export const World = {
   resume (state) { state.runtime.isPaused = false; },
 
   updateLoop (state) {
-    const { runtime } = state;
-    const timeNow = Date.now();
-    const timeDelta = Math.min(
-      timeNow - runtime.lastUpdateTime,
+    timeNow = Date.now();
+    timeDelta = Math.min(
+      timeNow - state.runtime.lastUpdateTime,
       TARGET_DURATION * MAX_UPDATE_CATCHUP_FRAMES
     );
-    runtime.lastUpdateTime = timeNow;
-    if (!runtime.isPaused) {
+    state.runtime.lastUpdateTime = timeNow;
+    if (!state.runtime.isPaused) {
       // Fixed-step game logic loop
       // see: http://gafferongames.com/game-physics/fix-your-timestep/
-      runtime.updateAccumulator += timeDelta;
-      while (runtime.updateAccumulator > TARGET_DURATION) {
+      state.runtime.updateAccumulator += timeDelta;
+      while (state.runtime.updateAccumulator > TARGET_DURATION) {
         World.update(state, TARGET_DURATION);
-        runtime.updateAccumulator -= TARGET_DURATION;
+        state.runtime.updateAccumulator -= TARGET_DURATION;
       }
     }
   },
 
-  update(state, timeDeltaMS) {
-    const timeDelta = timeDeltaMS / 1000;
-    const systems = state.modules.systems;
-    let i, systemState;
-    for (i = 0; i < state.systems.length; i++) {
-      systemState = state.systems[i];
-      systems[systemState.name]
-        .update(state, systemState, timeDelta);
-    }
-  },
-
   drawLoop(state, timestamp) {
-    const { runtime } = state;
-    if (!runtime.lastDrawTime) {
-      runtime.lastDrawTime = timestamp;
+    if (!state.runtime.lastDrawTime) {
+      state.runtime.lastDrawTime = timestamp;
     }
-    const timeDelta = timestamp - runtime.lastDrawTime;
-    runtime.lastDrawTime = timestamp;
-    if (!runtime.isPaused) {
+    timeDelta = timestamp - state.runtime.lastDrawTime;
+    state.runtime.lastDrawTime = timestamp;
+    if (!state.runtime.isPaused) {
       World.draw(state, timeDelta);
     }
   },
 
+  update(state, timeDeltaMS) {
+    timeDelta = timeDeltaMS / 1000;
+    systems = state.modules.systems;
+    for (j = 0; j < UPDATE_METHODS.length; j++) {
+      method = UPDATE_METHODS[j];
+      for (i = 0; i < state.systems.length; i++) {
+        systemState = state.systems[i];
+        systems[systemState.name][method](state, systemState, timeDelta);
+      }
+    }
+  },
+
   draw(state, timeDeltaMS) {
-    const timeDelta = timeDeltaMS / 1000;
-    const systems = state.modules.systems;
-    let i, systemState;
-    for (i = 0; i < state.systems.length; i++) {
-      systemState = state.systems[i];
-      systems[systemState.name]
-        .draw(state, systemState, timeDelta);
+    timeDelta = timeDeltaMS / 1000;
+    systems = state.modules.systems;
+    for (j = 0; j < DRAW_METHODS.length; j++) {
+      method = DRAW_METHODS[j];
+      for (i = 0; i < state.systems.length; i++) {
+        systemState = state.systems[i];
+        systems[systemState.name][method](state, systemState, timeDelta);
+      }
     }
   },
 
@@ -178,10 +203,7 @@ export const World = {
            (entityId in state.components[componentName]);
   },
 
-  // TODO: deprecate this alias
-  get (...args) { return World.getComponent(...args); },
-
-  getComponent (state, componentName, entityId) {
+  get (state, componentName, entityId) {
     if (!state.components[componentName]) {
       return {};
     } else if (!entityId) {
@@ -221,8 +243,13 @@ export const World = {
 export const System = impl => ({
   configure(config) { return config; },
   start(/* state, systemState */) {},
+  stop(/* state, systemState */) {},
+  updateStart(/* state, systemState, timeDelta */) {},
   update(/* state, systemState, timeDelta */) {},
+  updateEnd(/* state, systemState, timeDelta */) {},
+  drawStart(/* state, systemState, timeDelta */) {},
   draw(/* state, systemState, timeDelta */) {},
+  drawEnd(/* state, systemState, timeDelta */) {},
   ...impl
 });
 

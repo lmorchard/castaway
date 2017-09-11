@@ -1,4 +1,4 @@
-const { World, System, Component } = require('../core');
+const { System, Component } = require('../core');
 
 /* TODO:
  * - incorporate quadtree indexing
@@ -17,12 +17,14 @@ const PositionSystem = System({
     debug: false,
     ...config
   }),
+  /*
   start (state, systemState) {
   },
   update (state, systemState, timeDelta) {
   },
   draw (state, systemState, timeDelta) {
   }
+  */
 });
 
 export const components = { Position };

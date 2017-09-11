@@ -1,5 +1,7 @@
 const { World, System, Component } = require('../core');
 
+const PI2 = Math.PI * 2;
+
 const Motion = Component({
   defaults: () => ({
     dx: 0,
@@ -17,8 +19,9 @@ const MotionSystem = System({
   update (state, systemState, timeDelta) {
     const motions = World.get(state, 'Motion');
     for (const entityId in motions) {
+      const motion = motions[entityId];
+      const position = World.get(state, 'Position', entityId);
 
-      const position = World.get(state, 'Position');
       position.x += motion.dx * timeDelta;
       position.y += motion.dy * timeDelta;
 
@@ -29,7 +32,6 @@ const MotionSystem = System({
       if (position.rotation < 0) {
         position.rotation += PI2;
       }
-
     }
   }
 });
