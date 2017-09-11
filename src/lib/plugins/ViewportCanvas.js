@@ -14,22 +14,18 @@ const CanvasSprite = Component({
   }
 });
 
-let width, height, runtime;
+let width, height, sprites, entityId, r, x, y;
 
 const ViewportCanvasSystem = System({
   configure: config => ({
     container: '#game',
     lineWidth: 1.5,
     zoom: 1.0,
-    zoomMin: 0.1,
-    zoomMax: 10.0,
-    zoomWheelFactor: 0.025,
     cameraX: 0,
     cameraY: 0,
     gridEnabled: true,
     gridSize: 250,
     gridColor: '#202020',
-    followEnabled: false,
     followEntityId: null,
     ...config
   }),
@@ -37,135 +33,111 @@ const ViewportCanvasSystem = System({
   start (state, systemState) {
     if (state.runtime.viewportCanvas) { return; }
 
-    runtime = state.runtime.viewportCanvas = {};
-    runtime.container = document.querySelector(systemState.container);
-    runtime.canvas = document.createElement('canvas');
-    runtime.ctx = runtime.canvas.getContext('2d');
-    runtime.container.appendChild(runtime.canvas);
-
-    runtime.boundUpdateMetrics =
-      () => this.updateMetrics(state, systemState, runtime);
-    runtime.boundUpdateMetrics();
-
-    runtime.events = {
-      'resize': runtime.boundUpdateMetrics,
-      'orientationchange': runtime.boundUpdateMetrics
+    r = state.runtime.viewportCanvas = {
+      container: document.querySelector(systemState.container),
+      canvas: document.createElement('canvas')
     };
-    for (const name in runtime.events) {
-      window.addEventListener(name, runtime.events[name], false);
+    r.ctx = r.canvas.getContext('2d');
+    r.container.appendChild(r.canvas);
+
+    r.updateMetrics = () => this.updateMetrics(state, systemState, r);
+    r.updateMetrics();
+
+    r.events = {
+      'resize': r.updateMetrics,
+      'orientationchange': r.updateMetrics
+    };
+    for (const name in r.events) {
+      window.addEventListener(name, r.events[name], false);
     }
   },
 
   stop (state) {
-    runtime = state.runtime.viewportCanvas;
-    runtime.container.removeChild(runtime.canvas);
-    for (const name in runtime.events) {
-      window.removeEventListener(name, runtime.events[name]);
+    r = state.runtime.viewportCanvas;
+    r.container.removeChild(r.canvas);
+    for (const name in r.events) {
+      window.removeEventListener(name, r.events[name]);
     }
   },
 
   draw (state, systemState, timeDelta) {
-    const runtime = state.runtime.viewportCanvas;
+    r = state.runtime.viewportCanvas;
 
-    runtime.ctx.save();
-    /*
-    if (runtime.lastZoom !== systemState.zoom) {
-      console.log(runtime.lastZoom, systemState.zoom);
-      runtime.lastZoom = systemState.zoom;
-      this.updateMetrics(state, systemState, runtime);
-    }
-    */
-    // this.updateMetrics(state, systemState, runtime);
-    this.clear(state, systemState, runtime);
-    this.centerAndZoom(state, systemState, runtime, timeDelta);
-    // this.followEntity(state, systemState, runtime, timeDelta);
+    r.ctx.save();
+    this.updateMetrics(state, systemState, r);
+    this.clear(state, systemState, r);
+    this.centerAndZoom(state, systemState, r, timeDelta);
+    this.followEntity(state, systemState, r, timeDelta);
     if (systemState.gridEnabled) {
-      this.drawBackdrop(state, systemState, runtime, timeDelta);
+      this.drawBackdrop(state, systemState, r, timeDelta);
     }
-    this.drawScene(state, systemState, runtime, timeDelta);
-    runtime.ctx.restore();
+    this.drawScene(state, systemState, r, timeDelta);
+    r.ctx.restore();
   },
 
-  updateMetrics (state, systemState, runtime) {
-    width = runtime.container.offsetWidth;
-    height = runtime.container.offsetHeight;
+  updateMetrics (state, systemState, r) {
+    width = r.container.offsetWidth;
+    height = r.container.offsetHeight;
 
-    runtime.canvas.width = width;
-    runtime.canvas.height = height;
+    if (r.canvas.width !== width) { r.canvas.width = width; }
+    if (r.canvas.height !== height) { r.canvas.height = height; }
 
-    runtime.visibleWidth = width / systemState.zoom;
-    runtime.visibleHeight = height / systemState.zoom;
+    r.visibleWidth = width / systemState.zoom;
+    r.visibleHeight = height / systemState.zoom;
 
-    runtime.visibleLeft = (0 - runtime.visibleWidth / 2) + systemState.cameraX;
-    runtime.visibleTop = (0 - runtime.visibleHeight / 2) + systemState.cameraY;
-    runtime.visibleRight = runtime.visibleLeft + runtime.visibleWidth;
-    runtime.visibleBottom = runtime.visibleTop + runtime.visibleHeight;
+    r.visibleLeft = (0 - r.visibleWidth / 2) + systemState.cameraX;
+    r.visibleTop = (0 - r.visibleHeight / 2) + systemState.cameraY;
+    r.visibleRight = r.visibleLeft + r.visibleWidth;
+    r.visibleBottom = r.visibleTop + r.visibleHeight;
   },
 
-  clear (state, systemState, runtime) {
-    runtime.ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
-    runtime.ctx.fillRect(0, 0, runtime.canvas.width, runtime.canvas.height);
+  clear (state, systemState, r) {
+    r.ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
+    r.ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
   },
 
-  centerAndZoom (state, systemState, runtime) {
-    runtime.ctx.translate(runtime.canvas.width / 2, runtime.canvas.height / 2);
-    runtime.ctx.scale(systemState.zoom, systemState.zoom);
+  centerAndZoom (state, systemState, r) {
+    r.ctx.translate(r.canvas.width / 2, r.canvas.height / 2);
+    r.ctx.scale(systemState.zoom, systemState.zoom);
   },
 
-  followEntity (state, systemState, runtime) {
-    if (!systemState.followEnabled) {
+  followEntity (state, systemState, r) {
+    if (!systemState.followEntityId) {
       systemState.cameraX = systemState.cameraY = 0;
       return;
     }
-    if (systemState.followEntityId) {
-      // Adjust the viewport center offset to the entity position
-      const position = World.get(state, 'Position', systemState.followEntityId);
-      if (position) {
-        systemState.cameraX = position.x;
-        systemState.cameraY = position.y;
-        // this.setCursor(runtime.cursorRawX, runtime.cursorRawY);
-        runtime.ctx.translate(0 - runtime.cameraX, 0 - runtime.cameraY);
-      }
+    const position = World.get(state, 'Position', systemState.followEntityId);
+    if (position) {
+      systemState.cameraX = position.x;
+      systemState.cameraY = position.y;
+      r.ctx.translate(0 - r.cameraX, 0 - r.cameraY);
     }
   },
 
-  drawBackdrop (state, systemState, runtime/*, timeDelta */) {
+  drawBackdrop (state, systemState, r) {
     const gridSize = systemState.gridSize;
-    const gridOffsetX = runtime.visibleLeft % gridSize;
-    const gridOffsetY = runtime.visibleTop % gridSize;
-
-    const ctx = runtime.ctx;
-
+    const gridOffsetX = r.visibleLeft % gridSize;
+    const gridOffsetY = r.visibleTop % gridSize;
+    const ctx = r.ctx;
     ctx.save();
     ctx.beginPath();
     ctx.strokeStyle = systemState.gridColor;
     ctx.lineWidth = systemState.lineWidth / systemState.zoom;
-
-    for (
-      let x = (runtime.visibleLeft - gridOffsetX);
-      x < runtime.visibleRight;
-      x += gridSize
-    ) {
-      ctx.moveTo(x, runtime.visibleTop);
-      ctx.lineTo(x, runtime.visibleBottom);
+    for (x = (r.visibleLeft - gridOffsetX); x < r.visibleRight; x += gridSize) {
+      ctx.moveTo(x, r.visibleTop);
+      ctx.lineTo(x, r.visibleBottom);
     }
-
-    for (
-      let y = (runtime.visibleTop - gridOffsetY);
-      y < runtime.visibleBottom;
-      y += gridSize
-    ) {
-      ctx.moveTo(runtime.visibleLeft, y);
-      ctx.lineTo(runtime.visibleRight, y);
+    for (y = (r.visibleTop - gridOffsetY); y < r.visibleBottom; y += gridSize) {
+      ctx.moveTo(r.visibleLeft, y);
+      ctx.lineTo(r.visibleRight, y);
     }
-
     ctx.stroke();
     ctx.restore();
   },
 
   drawScene (state, systemState, runtime, timeDelta) {
-    const sprites = World.get(state, 'CanvasSprite');
-    for (const entityId in sprites) {
+    sprites = World.get(state, 'CanvasSprite');
+    for (entityId in sprites) {
       this.drawSprite(state, systemState, runtime, timeDelta,
                       entityId, sprites[entityId]);
     }
@@ -179,22 +151,17 @@ const ViewportCanvasSystem = System({
     if (!spriteFn) { spriteFn = getSprite('default'); }
 
     const ctx = runtime.ctx;
-
     ctx.save();
     ctx.translate(position.x, position.y);
     ctx.rotate(position.rotation + Math.PI/2);
     ctx.scale(sprite.size / 100, sprite.size / 100);
-
     // HACK: Try to keep line width consistent regardless of zoom, to sort of
     // simulate a vector display
-    ctx.lineWidth = this.lineWidth / this.zoom / (sprite.size / 100);
-
+    ctx.lineWidth = systemState.lineWidth / systemState.zoom / (sprite.size / 100);
     ctx.strokeStyle = sprite.color;
     spriteFn(ctx, timeDelta, sprite, entityId, state);
-
     ctx.restore();
   }
-
 });
 
 const spriteRegistry = {};
@@ -207,7 +174,7 @@ export function getSprite(name) {
 
 const PI2 = Math.PI * 2;
 
-registerSprite('default', (ctx/*, timeDelta, sprite, entityId*/) => {
+registerSprite('default', (ctx) => {
   ctx.beginPath();
   ctx.arc(0, 0, 50, 0, PI2, true);
   ctx.moveTo(0, 0);
@@ -216,13 +183,13 @@ registerSprite('default', (ctx/*, timeDelta, sprite, entityId*/) => {
   ctx.stroke();
 });
 
-registerSprite('sun', (ctx/*, timeDelta, sprite, entityId*/) => {
+registerSprite('sun', (ctx) => {
   ctx.beginPath();
   ctx.arc(0, 0, 50, 0, PI2, true);
   ctx.stroke();
 });
 
-registerSprite('enemyscout', (ctx/*, timeDelta, sprite, entityId*/) => {
+registerSprite('enemyscout', (ctx) => {
   ctx.beginPath();
   ctx.moveTo(0, -50);
   ctx.lineTo(-45, 50);
@@ -235,7 +202,7 @@ registerSprite('enemyscout', (ctx/*, timeDelta, sprite, entityId*/) => {
   ctx.stroke();
 });
 
-registerSprite('hero', (ctx/*, timeDelta, sprite, entityId*/) => {
+registerSprite('hero', (ctx) => {
   ctx.rotate(Math.PI);
   ctx.beginPath();
   ctx.moveTo(-12.5, -50);
@@ -250,7 +217,7 @@ registerSprite('hero', (ctx/*, timeDelta, sprite, entityId*/) => {
   ctx.stroke();
 });
 
-registerSprite('asteroid', (ctx, timeDelta, sprite/*, entityId*/) => {
+registerSprite('asteroid', (ctx, timeDelta, sprite) => {
   let idx;
 
   if (!sprite.points) {
@@ -277,7 +244,7 @@ registerSprite('asteroid', (ctx, timeDelta, sprite/*, entityId*/) => {
 
 });
 
-registerSprite('explosion', (ctx, timeDelta, sprite/*, entityId*/) => {
+registerSprite('explosion', (ctx, timeDelta, sprite) => {
   let p, idx;
 
   if (!sprite.initialized) {
