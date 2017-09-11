@@ -158,15 +158,16 @@ const ViewportCanvasSystem = System({
     try {
       getSprite(sprite.name)(ctx, timeDelta, sprite, entityId, state);
     } catch (e) {
-      Math.random() < 0.01 && console.error('sprite draw error', e);
       getSprite('default')(ctx, timeDelta, sprite, entityId, state);
+      // eslint-disable-next-line no-console
+      Math.random() < 0.01 && console.error('sprite draw error', e);
     }
     ctx.restore();
   }
 });
 
 const spriteRegistry = {
-  default: ctx => {
+  default (ctx) {
     ctx.beginPath();
     ctx.arc(0, 0, 50, 0, PI2, true);
     ctx.moveTo(0, 0);

@@ -151,6 +151,7 @@ export const World = {
           systemState = state.systems[i];
           systems[systemState.name][method](state, systemState, timeDelta);
         } catch (e) {
+          // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('update step', e);
         }
       }
@@ -167,6 +168,7 @@ export const World = {
           systemState = state.systems[i];
           systems[systemState.name][method](state, systemState, timeDelta);
         } catch (e) {
+          // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('draw step', e);
         }
       }
