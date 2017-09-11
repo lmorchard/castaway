@@ -62,16 +62,15 @@ const ViewportCanvasSystem = System({
 
   draw (state, systemState, timeDelta) {
     r = state.runtime.viewportCanvas;
-
     r.ctx.save();
     this.updateMetrics(state, systemState, r);
-    this.clear(state, systemState, r);
-    this.centerAndZoom(state, systemState, r, timeDelta);
-    this.followEntity(state, systemState, r, timeDelta);
+    this.clear(state, systemState, r, r.ctx);
+    this.centerAndZoom(state, systemState, r, r.ctx);
+    this.followEntity(state, systemState, r, r.ctx);
     if (systemState.gridEnabled) {
-      this.drawBackdrop(state, systemState, r, timeDelta);
+      this.drawBackdrop(state, systemState, r, r.ctx);
     }
-    this.drawScene(state, systemState, r, timeDelta);
+    this.drawScene(state, systemState, r, r.ctx, timeDelta);
     r.ctx.restore();
   },
 
@@ -91,17 +90,17 @@ const ViewportCanvasSystem = System({
     r.visibleBottom = r.visibleTop + r.visibleHeight;
   },
 
-  clear (state, systemState, r) {
-    r.ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
-    r.ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
+  clear (state, systemState, r, ctx) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
+    ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
   },
 
-  centerAndZoom (state, systemState, r) {
-    r.ctx.translate(r.canvas.width / 2, r.canvas.height / 2);
-    r.ctx.scale(systemState.zoom, systemState.zoom);
+  centerAndZoom (state, systemState, r, ctx) {
+    ctx.translate(r.canvas.width / 2, r.canvas.height / 2);
+    ctx.scale(systemState.zoom, systemState.zoom);
   },
 
-  followEntity (state, systemState, r) {
+  followEntity (state, systemState, r, ctx) {
     if (!systemState.followEntityId) {
       systemState.cameraX = systemState.cameraY = 0;
       return;
@@ -110,15 +109,14 @@ const ViewportCanvasSystem = System({
     if (position) {
       systemState.cameraX = position.x;
       systemState.cameraY = position.y;
-      r.ctx.translate(0 - r.cameraX, 0 - r.cameraY);
+      ctx.translate(0 - r.cameraX, 0 - r.cameraY);
     }
   },
 
-  drawBackdrop (state, systemState, r) {
+  drawBackdrop (state, systemState, r, ctx) {
     const gridSize = systemState.gridSize;
     const gridOffsetX = r.visibleLeft % gridSize;
     const gridOffsetY = r.visibleTop % gridSize;
-    const ctx = r.ctx;
     ctx.save();
     ctx.beginPath();
     ctx.strokeStyle = systemState.gridColor;
@@ -135,22 +133,21 @@ const ViewportCanvasSystem = System({
     ctx.restore();
   },
 
-  drawScene (state, systemState, runtime, timeDelta) {
+  drawScene (state, systemState, runtime, ctx, timeDelta) {
     sprites = World.get(state, 'CanvasSprite');
     for (entityId in sprites) {
-      this.drawSprite(state, systemState, runtime, timeDelta,
+      this.drawSprite(state, systemState, runtime, ctx, timeDelta,
                       entityId, sprites[entityId]);
     }
   },
 
-  drawSprite(state, systemState, runtime, timeDelta, entityId, sprite) {
+  drawSprite(state, systemState, runtime, ctx, timeDelta, entityId, sprite) {
     const position = World.get(state, 'Position', entityId);
     if (!position) { return; }
 
     let spriteFn = getSprite(sprite.name);
     if (!spriteFn) { spriteFn = getSprite('default'); }
 
-    const ctx = runtime.ctx;
     ctx.save();
     ctx.translate(position.x, position.y);
     ctx.rotate(position.rotation + Math.PI/2);

@@ -25,18 +25,15 @@ World.insert(state,
   { Name: { name: 'a1' },
     CanvasSprite: { name: 'hero' },
     Position: {},
-    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 }
-  },
+    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 } },
   { Name: { name: 'a2' },
     CanvasSprite: { name: 'asteroid' },
     Position: { x: 200, y: 0 },
-    Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 }
-  },
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 } },
   { Name: { name: 'a3' },
     CanvasSprite: { name: 'enemyscout' },
     Position: { x: -200, y: 0 },
-    Motion: { dx: 0, dy: 0, drotation: -Math.PI }
-  }
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI } }
 );
 
 World.start(state);
