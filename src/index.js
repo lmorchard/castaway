@@ -14,6 +14,48 @@ function updatePlugins() {
 }
 updatePlugins();
 
+World.configureSystems(state, [
+  [ 'ViewportCanvas', { debug: true } ],
+  'DrawStats',
+  'Position',
+  'Motion'
+]);
+
+World.insert(state,
+  { Name: { name: 'a1' },
+    CanvasSprite: { name: 'hero' },
+    Position: {},
+    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 }
+  },
+  { Name: { name: 'a2' },
+    CanvasSprite: { name: 'asteroid' },
+    Position: { x: 200, y: 0 },
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 }
+  },
+  { Name: { name: 'a3' },
+    CanvasSprite: { name: 'enemyscout' },
+    Position: { x: -200, y: 0 },
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI }
+  }
+);
+
+World.start(state);
+
+const gui = new dat.GUI();
+
+const worldFolder = gui.addFolder('World');
+worldFolder.add(state.runtime, 'isPaused');
+worldFolder.add(state.world, 'debug');
+worldFolder.open();
+
+const vpf = gui.addFolder('Viewport');
+const vpState = state.systems.filter(system => system.name === 'ViewportCanvas')[0];
+const names = [ 'gridEnabled' ];
+names.forEach(name => vpf.add(vpState, name).listen());
+vpf.add(vpState, 'zoom', 0.1, 2.0).step(0.1).listen();
+vpf.add(vpState, 'lineWidth', 1.0, 4.0).step(0.5).listen();
+vpf.open();
+
 if (module.hot) {
   module.hot.accept(plugins.id, () => {
     try {
@@ -36,54 +78,3 @@ if (module.hot) {
     }
   });
 }
-
-World.configureSystems(state, [
-  [
-    'ViewportCanvas', {
-      debug: true,
-      zoom: 0.3,
-      followEnabled: false
-    }
-  ],
-  'DrawStats',
-  'Position',
-  'Motion'
-]);
-
-World.insert(state,
-  {
-    Name: { name: 'a1' },
-    CanvasSprite: { name: 'hero' },
-    Position: {},
-    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 }
-  },
-  {
-    Name: { name: 'a2' },
-    CanvasSprite: { name: 'asteroid' },
-    Position: {},
-    Motion: { dx: 10, dy: 0, drotation: Math.PI / 3 }
-  },
-  {
-    Name: { name: 'a3' },
-    CanvasSprite: { name: 'enemyscout' },
-    Position: {},
-    Motion: { dx: 0.0, dy: 10, drotation: Math.PI * 2 }
-  }
-);
-
-World.start(state);
-
-const gui = new dat.GUI();
-
-const worldFolder = gui.addFolder('World');
-worldFolder.add(state.runtime, 'isPaused');
-worldFolder.add(state.world, 'debug');
-worldFolder.open();
-
-const vpf = gui.addFolder('Viewport');
-const vpState = state.systems.filter(system => system.name === 'ViewportCanvas')[0];
-const names = [ 'gridEnabled', 'followEnabled'/*, 'cameraX', 'cameraY'*/ ];
-names.forEach(name => vpf.add(vpState, name).listen());
-vpf.add(vpState, 'zoom', 0.1, 2.0).step(0.1).listen();
-vpf.add(vpState, 'lineWidth', 1.0, 4.0).step(0.5).listen();
-vpf.open();
