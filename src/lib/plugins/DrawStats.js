@@ -37,10 +37,18 @@ const DrawStats = System({
   stop (state, systemState) {
     const runtime = state.runtime.drawStats;
     if (systemState.draw) {
-      document.body.removeChild(runtime.drawStats.domElement);
+      try { document.body.removeChild(runtime.drawStats.domElement); }
+      catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
     }
     if (systemState.update) {
-      document.body.removeChild(runtime.updateStats.domElement);
+      try { document.body.removeChild(runtime.updateStats.domElement); }
+      catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
     }
   },
 

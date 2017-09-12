@@ -56,9 +56,13 @@ const ViewportCanvasSystem = System({
 
   stop (state) {
     r = state.runtime.viewportCanvas;
-    r.container.removeChild(r.canvas);
     for (const name in r.events) {
       window.removeEventListener(name, r.events[name]);
+    }
+    try { r.container.removeChild(r.canvas); }
+    catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
     }
   },
 
