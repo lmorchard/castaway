@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import core from '../src/lib/core';
+import core from './Core';
 
 describe('core', () => {
 

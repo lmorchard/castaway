@@ -1,4 +1,4 @@
-const { System } = require('../core');
+const { System } = require('../Core');
 
 import Stats from 'stats-js';
 

@@ -1,4 +1,4 @@
-const { World, System, Component } = require('../core');
+const { World, System, Component } = require('../Core');
 
 const PI2 = Math.PI * 2;
 

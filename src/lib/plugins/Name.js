@@ -1,4 +1,4 @@
-const { Component } = require('../core');
+const { Component } = require('../Core');
 
 const Name = Component({
   defaults: () => ({ name: '' })

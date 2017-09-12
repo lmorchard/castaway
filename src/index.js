@@ -2,7 +2,7 @@ import './index.css';
 
 import dat from 'dat-gui';
 
-let { World } = require('./lib/core');
+let { World } = require('./lib/Core');
 
 const state = window.state = World.initialize();
 state.world.debug = true;
@@ -64,10 +64,10 @@ if (module.hot) {
       console.error('plugin reload error', e);
     }
   });
-  module.hot.accept('./lib/core', () => {
+  module.hot.accept('./lib/Core', () => {
     try {
       World.stop(state);
-      ({ World } = require('./lib/core'));
+      ({ World } = require('./lib/Core'));
       World.start(state);
     } catch (e) {
       // eslint-disable-next-line no-console

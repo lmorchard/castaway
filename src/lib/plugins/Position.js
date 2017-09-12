@@ -1,4 +1,4 @@
-const { System, Component } = require('../core');
+const { System, Component } = require('../Core');
 
 /* TODO:
  * - incorporate quadtree indexing
