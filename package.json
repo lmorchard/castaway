@@ -9,7 +9,7 @@
     "build": "webpack -p",
     "lint": "eslint --color src test",
     "lint:watch": "onchange -p -v \"src/**/*.js\" \"test/**/*.js\" -- npm run lint",
-    "test": "mocha --colors --compilers js:babel-core/register --require test-setup.js --recursive 'src/**/*.test.js'",
+    "test": "mocha --colors --compilers js:babel-core/register --require test-setup.js 'src/**/*.test.js'",
     "test:watch": "npm run test -- --watch"
   },
   "author": "Les Orchard <me@lmorchard.com>",
