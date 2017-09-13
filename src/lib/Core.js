@@ -24,9 +24,9 @@ export const World = {
 
   create (initialWorld = {}) {
     return World.reset({
-      configs: [],
-      components: {},
       lastEntityId: 0,
+      components: {},
+      configs: [],
       runtime: {},
       modules: { systems: {}, components: {} },
       ...initialWorld
