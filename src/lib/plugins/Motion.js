@@ -7,11 +7,11 @@ const Motion = Component({
 });
 
 const MotionSystem = System({
-  update (state, systemState, systemRuntime, timeDelta) {
-    const motions = World.get(state, 'Motion');
+  update (world, config, runtime, timeDelta) {
+    const motions = World.get(world, 'Motion');
     for (const entityId in motions) {
       const motion = motions[entityId];
-      const position = World.get(state, 'Position', entityId);
+      const position = World.get(world, 'Position', entityId);
 
       position.x += motion.dx * timeDelta;
       position.y += motion.dy * timeDelta;

@@ -30,34 +30,34 @@ describe('Core', () => {
   describe('World', () => {
 
     describe('create()', () => {
-      it('should populate state with initial data', () => {
-        const state = World.create();
+      it('should populate world with initial data', () => {
+        const world = World.create();
         ['systems', 'components', 'runtime']
-          .forEach(name => expect(state).to.have.property(name));
-        expect(state.lastEntityId).to.equal(0);
+          .forEach(name => expect(world).to.have.property(name));
+        expect(world.lastEntityId).to.equal(0);
       });
     });
 
     describe('configure()', () => {
       it('should populate system configuration', () => {
-        const state = World.create();
+        const world = World.create();
         const example1 = System({
           configure: config => ({ foo: 'yay', bar: 'rab', ...config })
         });
         const example2 = System({
           configure: config => ({ quux: 'zork', info: 'com', ...config })
         });
-        World.install(state, [
+        World.install(world, [
           { systems: { example1, example2 } }
         ]);
-        World.configure(state, [
+        World.configure(world, [
           'example1',
           'example2',
           [ 'example1', { foo: 'bar' } ],
           [ 'example1', { bar: 'frotz' } ],
           [ 'example2', { quux: 'xyzzy' } ]
         ]);
-        expect(state.systems).to.deep.equal(
+        expect(world.systems).to.deep.equal(
           [ { foo: 'yay', bar: 'rab', name: 'example1' },
             { quux: 'zork', info: 'com', name: 'example2' },
             { foo: 'bar', bar: 'rab', name: 'example1' },
@@ -69,22 +69,22 @@ describe('Core', () => {
 
     describe('start()', () => {
       it('should set isRunning to true', () => {
-        const state = World.create({ runtime: { isRunning: false } });
-        World.start(state);
-        expect(state.runtime.isRunning).to.be.true;
+        const world = World.create({ runtime: { isRunning: false } });
+        World.start(world);
+        expect(world.runtime.isRunning).to.be.true;
       });
 
       it('should schedule the first update & draw ticks only once', () => {
-        const state = World.create({ runtime: { isRunning: false } });
+        const world = World.create({ runtime: { isRunning: false } });
         [0, 1].forEach(() => {
-          World.start(state);
+          World.start(world);
           expect(global.setTimeout.callCount).to.equal(1);
           expect(global.requestAnimationFrame.callCount).to.equal(1);
         });
       });
 
       it('should start all the configured systems', () => {
-        const state = World.create({
+        const world = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -93,32 +93,32 @@ describe('Core', () => {
         });
         const example1 = { start: sinon.spy(), };
         const example2 = { start: sinon.spy(), };
-        World.install(state, [
+        World.install(world, [
           { systems: { example1, example2 } }
         ]);
-        World.start(state);
+        World.start(world);
 
         let fn;
         fn = example1.start;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(state.systems[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(state.systems[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(world.systems[1]);
 
         fn = example2.start;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(state.systems[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[2]);
       });
     });
 
     describe('stop()', () => {
       it('should set isRunning to false', () => {
-        const state = World.create({ runtime: { isRunning: true } });
-        World.stop(state);
-        expect(state.runtime.isRunning).to.be.false;
+        const world = World.create({ runtime: { isRunning: true } });
+        World.stop(world);
+        expect(world.runtime.isRunning).to.be.false;
       });
 
       it('should stop all the configured systems', () => {
-        const state = World.create({
+        const world = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -127,43 +127,43 @@ describe('Core', () => {
         });
         const example1 = System({ stop: sinon.spy() });
         const example2 = System({ stop: sinon.spy() });
-        World.install(state, [
+        World.install(world, [
           { systems: { example1, example2 } }
         ]);
-        World.start(state);
-        World.stop(state);
+        World.start(world);
+        World.stop(world);
 
         let fn;
         fn = example1.stop;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(state.systems[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(state.systems[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(world.systems[1]);
 
         fn = example2.stop;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(state.systems[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[2]);
       });
     });
 
     describe('pause()', () => {
       it('should set isPaused to true', () => {
-        const state = { runtime: { isPaused: false } };
-        World.pause(state);
-        expect(state.runtime.isPaused).to.be.true;
+        const world = { runtime: { isPaused: false } };
+        World.pause(world);
+        expect(world.runtime.isPaused).to.be.true;
       });
     });
 
     describe('resume()', () => {
       it('should set isPaused to false', () => {
-        const state = { runtime: { isPaused: true } };
-        World.resume(state);
-        expect(state.runtime.isPaused).to.be.false;
+        const world = { runtime: { isPaused: true } };
+        World.resume(world);
+        expect(world.runtime.isPaused).to.be.false;
       });
     });
 
     describe('update()', () => {
       it('should call updateStart, update, and updateEnd functions for systems', () => {
-        const state = World.create({
+        const world = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -180,29 +180,29 @@ describe('Core', () => {
           update: sinon.spy(),
           updateEnd: sinon.spy()
         };
-        World.install(state, [
+        World.install(world, [
           { systems: { example1, example2 } }
         ]);
-        World.update(state, 10000);
+        World.update(world, 10000);
 
         ['updateStart', 'update', 'updateEnd'].forEach(name => {
           const fn1 = example1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(state.systems[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(state.systems[1]);
+          expect(fn1.firstCall.args[1]).to.deep.equal(world.systems[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(world.systems[1]);
         });
 
         ['updateStart', 'update', 'updateEnd'].forEach(name => {
           const fn2 = example2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(state.systems[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(world.systems[2]);
         });
       });
     });
 
     describe('draw()', () => {
       it('should call drawStart, draw, and drawEnd functions for systems', () => {
-        const state = World.create({
+        const world = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -219,32 +219,32 @@ describe('Core', () => {
           draw: sinon.spy(),
           drawEnd: sinon.spy()
         };
-        World.install(state, [
+        World.install(world, [
           { systems: { example1, example2 } }
         ]);
-        World.draw(state, 10000);
+        World.draw(world, 10000);
 
         ['drawStart', 'draw', 'drawEnd'].forEach(name => {
           const fn1 = example1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(state.systems[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(state.systems[1]);
+          expect(fn1.firstCall.args[1]).to.deep.equal(world.systems[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(world.systems[1]);
         });
 
         ['drawStart', 'draw', 'drawEnd'].forEach(name => {
           const fn2 = example2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(state.systems[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(world.systems[2]);
         });
       });
     });
 
     describe('generateId()', () => {
       it('should produce a unique ID after several calls', () => {
-        const state = World.create();
+        const world = World.create();
         const ids = [];
         [0, 1, 2].forEach(() => {
-          const id = World.generateId(state);
+          const id = World.generateId(world);
           expect(ids).to.not.contain(id);
           ids.push(id);
         });
@@ -252,7 +252,7 @@ describe('Core', () => {
     });
 
     describe('get()', () => {
-      const readOnlyState = World.create({
+      const readOnlyworld = World.create({
         components: {
           component1: {
             8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
@@ -265,34 +265,34 @@ describe('Core', () => {
         }
       });
       it('should get component data from the store for a single entity', () => {
-        expect(World.get(readOnlyState, 'component1', '8675309')).to.deep.equal({
+        expect(World.get(readOnlyworld, 'component1', '8675309')).to.deep.equal({
           prop1: 'a', prop2: 'xx', prop3: 'yy'
         });
       });
       it('should get all components of one type', () => {
-        expect(World.get(readOnlyState, 'component1')).to.deep.equal({
+        expect(World.get(readOnlyworld, 'component1')).to.deep.equal({
           8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
           9035768: { prop1: 'a', prop2: 'b' }
         });
       });
       it('should return an empty object if no components of type exist', () => {
-        expect(World.get(readOnlyState, 'notacomponent')).to.deep.equal({});
+        expect(World.get(readOnlyworld, 'notacomponent')).to.deep.equal({});
       });
     });
 
     describe('insert()', () => {
       it('should accept a collection of components to create an entity', () => {
-        const state = World.create();
+        const world = World.create();
 
         const component1 = Component({ defaults: () => ({ prop1: 'a', prop2: 'b' }) });
         const component2 = Component({ defaults: () => ({ propA: '1', propB: '2' }) });
         const component3 = Component({ defaults: () => ({ propX: 'A', propY: 'B' }) });
 
-        World.install(state, [{
+        World.install(world, [{
           components: { component1, component2, component3 }
         }]);
 
-        World.insert(state,
+        World.insert(world,
           {
             component1: { gabba: 'abba' },
             component2: { whee: 'yay' },
@@ -305,7 +305,7 @@ describe('Core', () => {
           }
         );
 
-        expect(state.components).to.deep.equal({
+        expect(world.components).to.deep.equal({
           component1:
            { '1': { prop1: 'a', prop2: 'b', gabba: 'abba' },
              '2': { prop1: 'abba', prop2: 'b' } },
@@ -321,7 +321,7 @@ describe('Core', () => {
 
     describe('destroy()', () => {
       it('should remove all components for an entity', () => {
-        const state = World.create({
+        const world = World.create({
           components: {
             component1:
              { '1': { prop1: 'a', prop2: 'b', gabba: 'abba' },
@@ -335,9 +335,9 @@ describe('Core', () => {
           }
         });
 
-        World.destroy(state, '1');
+        World.destroy(world, '1');
 
-        expect(state.components).to.deep.equal({
+        expect(world.components).to.deep.equal({
           component1:
            { '2': { prop1: 'abba', prop2: 'b' } },
           component2:

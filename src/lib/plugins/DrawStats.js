@@ -4,45 +4,45 @@ import Stats from 'stats-js';
 const DrawStats = System({
   configure: config => ({ draw: true, update: true, ...config }),
 
-  start (state, systemState, systemRuntime) {
-    if (systemState.draw && !systemRuntime.drawStats) {
-      systemRuntime.drawStats = new Stats();
-      systemRuntime.drawStats.setMode(0);
-      Object.assign(systemRuntime.drawStats.domElement.style,
+  start (world, config, runtime) {
+    if (config.draw && !runtime.drawStats) {
+      runtime.drawStats = new Stats();
+      runtime.drawStats.setMode(0);
+      Object.assign(runtime.drawStats.domElement.style,
         { position: 'absolute', left: '90px', top: '0px' });
-      document.body.appendChild(systemRuntime.drawStats.domElement);
+      document.body.appendChild(runtime.drawStats.domElement);
     }
-    if (systemState.update && !systemRuntime.updateStats) {
-      systemRuntime.updateStats = new Stats();
-      systemRuntime.updateStats.setMode(0);
-      Object.assign(systemRuntime.updateStats.domElement.style,
+    if (config.update && !runtime.updateStats) {
+      runtime.updateStats = new Stats();
+      runtime.updateStats.setMode(0);
+      Object.assign(runtime.updateStats.domElement.style,
         { position: 'absolute', left: '0px', top: '0px' });
-      document.body.appendChild(systemRuntime.updateStats.domElement);
+      document.body.appendChild(runtime.updateStats.domElement);
     }
   },
 
-  stop (state, systemState, systemRuntime) {
-    if (systemState.draw) {
-      try { document.body.removeChild(systemRuntime.drawStats.domElement); }
+  stop (world, config, runtime) {
+    if (config.draw) {
+      try { document.body.removeChild(runtime.drawStats.domElement); }
       catch (e) { console.error(e); } // eslint-disable-line no-console
     }
-    if (systemState.update) {
-      try { document.body.removeChild(systemRuntime.updateStats.domElement); }
+    if (config.update) {
+      try { document.body.removeChild(runtime.updateStats.domElement); }
       catch (e) { console.error(e); } // eslint-disable-line no-console
     }
   },
 
-  updateStart(state, systemState, systemRuntime) {
-    systemState.update && systemRuntime.updateStats.begin();
+  updateStart(world, config, runtime) {
+    config.update && runtime.updateStats.begin();
   },
-  updateEnd(state, systemState, systemRuntime) {
-    systemState.update && systemRuntime.updateStats.end();
+  updateEnd(world, config, runtime) {
+    config.update && runtime.updateStats.end();
   },
-  drawStart(state, systemState, systemRuntime) {
-    systemState.draw && systemRuntime.drawStats.begin();
+  drawStart(world, config, runtime) {
+    config.draw && runtime.drawStats.begin();
   },
-  drawEnd(state, systemState, systemRuntime) {
-    systemState.draw && systemRuntime.drawStats.end();
+  drawEnd(world, config, runtime) {
+    config.draw && runtime.drawStats.end();
   }
 });
 

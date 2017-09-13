@@ -20,23 +20,23 @@ const MAX_UPDATE_CATCHUP_FRAMES = 5;
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
 
-let i, j, method, systems, systemState, systemRuntime, timeNow, timeDelta;
+let idx, item, entityId, i, j, method, systems, timeNow, timeDelta;
 
 export const World = {
 
-  create (initialState = {}) {
+  create (initialWorld = {}) {
     return World.reset({
       systems: [],
       components: {},
       lastEntityId: 0,
       runtime: {},
       modules: { systems: {}, components: {} },
-      ...initialState
+      ...initialWorld
     });
   },
 
-  reset (state) {
-    state.runtime = {
+  reset (world) {
+    world.runtime = {
       isRunning: false,
       isPaused: false,
       lastUpdateTime: Date.now(),
@@ -44,12 +44,12 @@ export const World = {
       lastDrawTime: 0,
       systems: []
     };
-    return state;
+    return world;
   },
 
-  configure (state, config) {
-    const systems = state.modules.systems;
-    state.systems = config.map(item => {
+  configure (world, config) {
+    const systems = world.modules.systems;
+    world.systems = config.map(item => {
       item = typeof item === 'string'
         ? { name: item }
         : { name: item[0], ...item[1] };
@@ -60,26 +60,28 @@ export const World = {
 
   },
 
-  start (state) {
+  start (world) {
     // Bail if we're already running, otherwise reset the runtime
-    if (state.runtime.isRunning) { return; }
-    World.reset(state);
+    if (world.runtime.isRunning) { return; }
+    World.reset(world);
 
-    const { runtime } = state;
+    const { runtime } = world;
     runtime.isRunning = true;
 
     // Start up all the systems
-    const systems = state.modules.systems;
-    let i, systemState;
-    for (i = 0; i < state.systems.length; i++) {
-      systemState = state.systems[i];
-      systemRuntime = state.runtime.systems[i] = {};
-      systems[systemState.name].start(state, systemState, systemRuntime);
+    const systems = world.modules.systems;
+    for (i = 0; i < world.systems.length; i++) {
+      world.runtime.systems[i] = {};
+      systems[world.systems[i].name].start(
+        world,
+        world.systems[i],
+        world.runtime.systems[i]
+      );
     }
 
     // Fire up the update loop timer
     const updateFn = () => {
-      World.updateLoop(state);
+      World.updateLoop(world);
       if (runtime.isRunning) {
         runtime.updateTimer = setTimeout(updateFn, TARGET_DURATION);
       }
@@ -88,7 +90,7 @@ export const World = {
 
     // Fire up the draw loop animation frames
     const drawFn = (timestamp) => {
-      World.drawLoop(state, timestamp);
+      World.drawLoop(world, timestamp);
       if (runtime.isRunning) {
         runtime.drawFrame = requestAnimationFrame(drawFn);
       }
@@ -96,69 +98,74 @@ export const World = {
     runtime.drawFrame = requestAnimationFrame(drawFn);
   },
 
-  stop (state) {
-    const { runtime } = state;
+  stop (world) {
+    const { runtime } = world;
     runtime.isRunning = false;
     if (runtime.updateTimer) { clearTimeout(runtime.updateTimer); }
     if (runtime.drawFrame) { cancelAnimationFrame(runtime.drawFrame); }
 
     // Allow all the systems to stop
-    const systems = state.modules.systems;
-    for (i = 0; i < state.systems.length; i++) {
-      systemState = state.systems[i];
-      systemRuntime = state.runtime.systems[i];
-      systems[systemState.name].stop(state, systemState, systemRuntime);
+    const systems = world.modules.systems;
+    for (i = 0; i < world.systems.length; i++) {
+      systems[world.systems[i].name].stop(
+        world,
+        world.systems[i],
+        world.runtime.systems[i]
+      );
     }
   },
 
-  restart (state) {
-    World.stop(state);
-    World.start(state);
+  restart (world) {
+    World.stop(world);
+    World.start(world);
   },
 
-  pause (state) { state.runtime.isPaused = true; },
+  pause (world) { world.runtime.isPaused = true; },
 
-  resume (state) { state.runtime.isPaused = false; },
+  resume (world) { world.runtime.isPaused = false; },
 
-  updateLoop (state) {
+  updateLoop (world) {
     timeNow = Date.now();
     timeDelta = Math.min(
-      timeNow - state.runtime.lastUpdateTime,
+      timeNow - world.runtime.lastUpdateTime,
       TARGET_DURATION * MAX_UPDATE_CATCHUP_FRAMES
     );
-    state.runtime.lastUpdateTime = timeNow;
-    if (!state.runtime.isPaused) {
+    world.runtime.lastUpdateTime = timeNow;
+    if (!world.runtime.isPaused) {
       // Fixed-step game logic loop
       // see: http://gafferongames.com/game-physics/fix-your-timestep/
-      state.runtime.updateAccumulator += timeDelta;
-      while (state.runtime.updateAccumulator > TARGET_DURATION) {
-        World.update(state, TARGET_DURATION);
-        state.runtime.updateAccumulator -= TARGET_DURATION;
+      world.runtime.updateAccumulator += timeDelta;
+      while (world.runtime.updateAccumulator > TARGET_DURATION) {
+        World.update(world, TARGET_DURATION);
+        world.runtime.updateAccumulator -= TARGET_DURATION;
       }
     }
   },
 
-  drawLoop(state, timestamp) {
-    if (!state.runtime.lastDrawTime) {
-      state.runtime.lastDrawTime = timestamp;
+  drawLoop (world, timestamp) {
+    if (!world.runtime.lastDrawTime) {
+      world.runtime.lastDrawTime = timestamp;
     }
-    timeDelta = timestamp - state.runtime.lastDrawTime;
-    state.runtime.lastDrawTime = timestamp;
-    if (!state.runtime.isPaused) {
-      World.draw(state, timeDelta);
+    timeDelta = timestamp - world.runtime.lastDrawTime;
+    world.runtime.lastDrawTime = timestamp;
+    if (!world.runtime.isPaused) {
+      World.draw(world, timeDelta);
     }
   },
 
-  update(state, timeDeltaMS) {
+  update (world, timeDeltaMS) {
     timeDelta = timeDeltaMS / 1000;
-    systems = state.modules.systems;
+    systems = world.modules.systems;
     for (j = 0; j < UPDATE_METHODS.length; j++) {
       method = UPDATE_METHODS[j];
-      for (i = 0; i < state.systems.length; i++) {
+      for (i = 0; i < world.systems.length; i++) {
         try {
-          systemState = state.systems[i];
-          systemRuntime = state.runtime.systems[i];
-          systems[systemState.name][method](state, systemState, systemRuntime, timeDelta);
+          systems[world.systems[i].name][method](
+            world,
+            world.systems[i],
+            world.runtime.systems[i],
+            timeDelta
+          );
         } catch (e) {
           // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('update step', e);
@@ -167,16 +174,19 @@ export const World = {
     }
   },
 
-  draw(state, timeDeltaMS) {
+  draw (world, timeDeltaMS) {
     timeDelta = timeDeltaMS / 1000;
-    systems = state.modules.systems;
+    systems = world.modules.systems;
     for (j = 0; j < DRAW_METHODS.length; j++) {
       method = DRAW_METHODS[j];
-      for (i = 0; i < state.systems.length; i++) {
+      for (i = 0; i < world.systems.length; i++) {
         try {
-          systemState = state.systems[i];
-          systemRuntime = state.runtime.systems[i];
-          systems[systemState.name][method](state, systemState, systemRuntime, timeDelta);
+          systems[world.systems[i].name][method](
+            world,
+            world.systems[i],
+            world.runtime.systems[i],
+            timeDelta
+          );
         } catch (e) {
           // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('draw step', e);
@@ -185,31 +195,27 @@ export const World = {
     }
   },
 
-  install (state, plugins) {
+  install (world, plugins) {
     plugins.forEach(module =>
       ['systems', 'components'].forEach(type =>
         Object.keys(module[type] || {}).forEach(name =>
-          state.modules[type][name] = module[type][name]
+          world.modules[type][name] = module[type][name]
         )
       )
     );
   },
 
-  generateId (state) { return ++(state.lastEntityId); },
+  generateId (world) { return ++(world.lastEntityId); },
 
-  insert (state, ...items) {
+  insert (world, ...items) {
     const out = [];
-    let idx, item, entityId, componentName, componentAttrs, componentModule, componentData;
+    let name, module;
     for (idx = 0; item = items[idx]; idx++) {
-      entityId = World.generateId(state);
-      for (componentName in item) {
-        componentAttrs = item[componentName];
-        componentModule = state.modules.components[componentName];
-        componentData = componentModule.create(componentAttrs);
-        if (!state.components[componentName]) {
-          state.components[componentName] = {};
-        }
-        state.components[componentName][entityId] = componentData;
+      entityId = World.generateId(world);
+      for (name in item) {
+        if (!world.components[name]) { world.components[name] = {}; }
+        module = world.modules.components[name];
+        world.components[name][entityId] = module.create(item[name]);
       }
       // if (this.world) this.world.publish(Messages.ENTITY_INSERT, entityId);
       out.push(entityId);
@@ -217,23 +223,23 @@ export const World = {
     return out.length > 1 ? out : out[0];
   },
 
-  destroy (state, entityId) {
-    let componentName;
+  destroy (world, entityId) {
+    let name;
     // if (this.world) this.world.publish(Messages.ENTITY_DESTROY, entityId);
-    for (componentName in state.components) {
-      if (entityId in state.components[componentName]) {
-        delete state.components[componentName][entityId];
+    for (name in world.components) {
+      if (entityId in world.components[name]) {
+        delete world.components[name][entityId];
       }
     }
   },
 
-  get (state, componentName, entityId) {
-    if (!state.components[componentName]) {
+  get (world, name, entityId) {
+    if (!world.components[name]) {
       return {};
     } else if (!entityId) {
-      return state.components[componentName];
+      return world.components[name];
     } else {
-      return state.components[componentName][entityId];
+      return world.components[name][entityId];
     }
   }
 
@@ -241,22 +247,22 @@ export const World = {
 
 export const System = impl => ({
   configure: config => ({ debug: false, ...config }),
-  start(/* state, systemState, systemRuntime */) {},
-  stop(/* state, systemState, systemRuntime */) {},
-  updateStart(/* state, systemState, systemRuntime, timeDelta */) {},
-  update(/* state, systemState, systemRuntime, timeDelta */) {},
-  updateEnd(/* state, systemState, systemRuntime, timeDelta */) {},
-  drawStart(/* state, systemState, systemRuntime, timeDelta */) {},
-  draw(/* state, systemState, systemRuntime, timeDelta */) {},
-  drawEnd(/* state, systemState, systemRuntime, timeDelta */) {},
+  start (/* world, config, runtime */) {},
+  stop (/* world, config, runtime */) {},
+  updateStart (/* world, config, runtime, timeDelta */) {},
+  update (/* world, config, runtime, timeDelta */) {},
+  updateEnd (/* world, config, runtime, timeDelta */) {},
+  drawStart (/* world, config, runtime, timeDelta */) {},
+  draw (/* world, config, runtime, timeDelta */) {},
+  drawEnd (/* world, config, runtime, timeDelta */) {},
   ...impl
 });
 
 export const Component = impl => ({
-  defaults() {
+  defaults () {
     return {};
   },
-  create(attrs = {}) {
+  create (attrs = {}) {
     return { ...this.defaults(), ...attrs };
   },
   ...impl

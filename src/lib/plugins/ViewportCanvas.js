@@ -32,13 +32,13 @@ const ViewportCanvasSystem = System({
     ...config
   }),
 
-  start (state, systemState, r) {
-    r.container = document.querySelector(systemState.container);
+  start (world, config, r) {
+    r.container = document.querySelector(config.container);
     r.canvas = document.createElement('canvas');
     r.ctx = r.canvas.getContext('2d');
     r.container.appendChild(r.canvas);
 
-    r.updateMetrics = () => this.updateMetrics(state, systemState, r);
+    r.updateMetrics = () => this.updateMetrics(world, config, r);
     r.updateMetrics();
 
     r.events = {
@@ -50,7 +50,7 @@ const ViewportCanvasSystem = System({
     }
   },
 
-  stop (state, systemState, r) {
+  stop (world, config, r) {
     for (const name in r.events) {
       window.removeEventListener(name, r.events[name]);
     }
@@ -58,66 +58,66 @@ const ViewportCanvasSystem = System({
     catch (e) { console.error(e); } // eslint-disable-line no-console
   },
 
-  draw (state, systemState, r, timeDelta) {
+  draw (world, config, r, timeDelta) {
     r.ctx.save();
-    this.updateMetrics(state, systemState, r);
-    this.clear(state, systemState, r, r.ctx);
-    this.centerAndZoom(state, systemState, r, r.ctx);
-    this.followEntity(state, systemState, r, r.ctx);
-    if (systemState.gridEnabled) {
-      this.drawBackdrop(state, systemState, r, r.ctx);
+    this.updateMetrics(world, config, r);
+    this.clear(world, config, r, r.ctx);
+    this.centerAndZoom(world, config, r, r.ctx);
+    this.followEntity(world, config, r, r.ctx);
+    if (config.gridEnabled) {
+      this.drawBackdrop(world, config, r, r.ctx);
     }
-    this.drawScene(state, systemState, r, r.ctx, timeDelta);
+    this.drawScene(world, config, r, r.ctx, timeDelta);
     r.ctx.restore();
   },
 
-  updateMetrics (state, systemState, r) {
+  updateMetrics (world, config, r) {
     width = r.container.offsetWidth;
     height = r.container.offsetHeight;
 
     if (r.canvas.width !== width) { r.canvas.width = width; }
     if (r.canvas.height !== height) { r.canvas.height = height; }
 
-    r.visibleWidth = width / systemState.zoom;
-    r.visibleHeight = height / systemState.zoom;
+    r.visibleWidth = width / config.zoom;
+    r.visibleHeight = height / config.zoom;
 
-    r.visibleLeft = (0 - r.visibleWidth / 2) + systemState.cameraX;
-    r.visibleTop = (0 - r.visibleHeight / 2) + systemState.cameraY;
+    r.visibleLeft = (0 - r.visibleWidth / 2) + config.cameraX;
+    r.visibleTop = (0 - r.visibleHeight / 2) + config.cameraY;
     r.visibleRight = r.visibleLeft + r.visibleWidth;
     r.visibleBottom = r.visibleTop + r.visibleHeight;
   },
 
-  clear (state, systemState, r, ctx) {
+  clear (world, config, r, ctx) {
     ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
     ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
   },
 
-  centerAndZoom (state, systemState, r, ctx) {
+  centerAndZoom (world, config, r, ctx) {
     ctx.translate(r.canvas.width / 2, r.canvas.height / 2);
-    ctx.scale(systemState.zoom, systemState.zoom);
+    ctx.scale(config.zoom, config.zoom);
   },
 
-  followEntity (state, systemState, r, ctx) {
-    if (!systemState.followEntityId) {
-      systemState.cameraX = systemState.cameraY = 0;
+  followEntity (world, config, r, ctx) {
+    if (!config.followEntityId) {
+      config.cameraX = config.cameraY = 0;
       return;
     }
-    const position = World.get(state, 'Position', systemState.followEntityId);
+    const position = World.get(world, 'Position', config.followEntityId);
     if (position) {
-      systemState.cameraX = position.x;
-      systemState.cameraY = position.y;
+      config.cameraX = position.x;
+      config.cameraY = position.y;
       ctx.translate(0 - r.cameraX, 0 - r.cameraY);
     }
   },
 
-  drawBackdrop (state, systemState, r, ctx) {
-    const gridSize = systemState.gridSize;
+  drawBackdrop (world, config, r, ctx) {
+    const gridSize = config.gridSize;
     const gridOffsetX = r.visibleLeft % gridSize;
     const gridOffsetY = r.visibleTop % gridSize;
     ctx.save();
     ctx.beginPath();
-    ctx.strokeStyle = systemState.gridColor;
-    ctx.lineWidth = systemState.lineWidth / systemState.zoom;
+    ctx.strokeStyle = config.gridColor;
+    ctx.lineWidth = config.lineWidth / config.zoom;
     for (x = (r.visibleLeft - gridOffsetX); x < r.visibleRight; x += gridSize) {
       ctx.moveTo(x, r.visibleTop);
       ctx.lineTo(x, r.visibleBottom);
@@ -130,16 +130,16 @@ const ViewportCanvasSystem = System({
     ctx.restore();
   },
 
-  drawScene (state, systemState, runtime, ctx, timeDelta) {
-    sprites = World.get(state, 'CanvasSprite');
+  drawScene (world, config, runtime, ctx, timeDelta) {
+    sprites = World.get(world, 'CanvasSprite');
     for (entityId in sprites) {
-      this.drawSprite(state, systemState, runtime, ctx, timeDelta,
+      this.drawSprite(world, config, runtime, ctx, timeDelta,
                       entityId, sprites[entityId]);
     }
   },
 
-  drawSprite(state, systemState, runtime, ctx, timeDelta, entityId, sprite) {
-    const position = World.get(state, 'Position', entityId);
+  drawSprite(world, config, runtime, ctx, timeDelta, entityId, sprite) {
+    const position = World.get(world, 'Position', entityId);
     if (!position) { return; }
 
     ctx.save();
@@ -148,12 +148,12 @@ const ViewportCanvasSystem = System({
     ctx.scale(sprite.size / 100, sprite.size / 100);
     // HACK: Try to keep line width consistent regardless of zoom, to sort of
     // simulate a vector display
-    ctx.lineWidth = systemState.lineWidth / systemState.zoom / (sprite.size / 100);
+    ctx.lineWidth = config.lineWidth / config.zoom / (sprite.size / 100);
     ctx.strokeStyle = sprite.color;
     try {
-      getSprite(sprite.name)(ctx, timeDelta, sprite, entityId, state);
+      getSprite(sprite.name)(ctx, timeDelta, sprite, entityId, world);
     } catch (e) {
-      getSprite('default')(ctx, timeDelta, sprite, entityId, state);
+      getSprite('default')(ctx, timeDelta, sprite, entityId, world);
       // eslint-disable-next-line no-console
       Math.random() < 0.01 && console.error('sprite draw error', e);
     }

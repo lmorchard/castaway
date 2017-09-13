@@ -4,23 +4,23 @@ import dat from 'dat-gui';
 
 let { World } = require('./lib/Core');
 
-const state = window.state = World.create();
+const world = window.world = World.create();
 
 let plugins;
 function updatePlugins() {
   plugins = require.context('./lib/plugins', false, /\.js$/);
-  World.install(state, plugins.keys().map(key => plugins(key)));
+  World.install(world, plugins.keys().map(key => plugins(key)));
 }
 updatePlugins();
 
-World.configure(state, [
+World.configure(world, [
   [ 'ViewportCanvas', { debug: true } ],
   'DrawStats',
   'Position',
   'Motion'
 ]);
 
-World.insert(state,
+World.insert(world,
   { Name: { name: 'a1' },
     CanvasSprite: { name: 'hero' },
     Position: {},
@@ -35,28 +35,28 @@ World.insert(state,
     Motion: { dx: 0, dy: 0, drotation: -Math.PI } }
 );
 
-World.start(state);
+World.start(world);
 
 const gui = new dat.GUI();
 
 const worldFolder = gui.addFolder('World');
-worldFolder.add(state.runtime, 'isPaused');
+worldFolder.add(world.runtime, 'isPaused');
 worldFolder.open();
 
 const vpf = gui.addFolder('Viewport');
-const vpState = state.systems.filter(system => system.name === 'ViewportCanvas')[0];
+const vpconfig = world.systems.filter(system => system.name === 'ViewportCanvas')[0];
 const names = [ 'gridEnabled' ];
-names.forEach(name => vpf.add(vpState, name).listen());
-vpf.add(vpState, 'zoom', 0.1, 2.0).step(0.1).listen();
-vpf.add(vpState, 'lineWidth', 1.0, 4.0).step(0.5).listen();
+names.forEach(name => vpf.add(vpconfig, name).listen());
+vpf.add(vpconfig, 'zoom', 0.1, 2.0).step(0.1).listen();
+vpf.add(vpconfig, 'lineWidth', 1.0, 4.0).step(0.5).listen();
 vpf.open();
 
 if (module.hot) {
   module.hot.accept(plugins.id, () => {
     try {
-      World.stop(state);
+      World.stop(world);
       updatePlugins();
-      World.start(state);
+      World.start(world);
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('plugin reload error', e);
@@ -64,9 +64,9 @@ if (module.hot) {
   });
   module.hot.accept('./lib/Core', () => {
     try {
-      World.stop(state);
+      World.stop(world);
       ({ World } = require('./lib/Core'));
-      World.start(state);
+      World.start(world);
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('core reload error', e);
