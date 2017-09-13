@@ -1,3 +1,18 @@
+/* TODO
+ * - provide runtime objects to systems in core loops
+ * - plugins to port
+ *   - position (quadtree)
+ *   - bounce
+ *   - collision
+ *   - hordeSpawn
+ *   - playerInputSteering
+ *   - repulsor
+ *   - roadRunner
+ *   - seeker
+ *   - spawn
+ *   - steering
+ *   - thruster
+ */
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
 const MAX_UPDATE_CATCHUP_FRAMES = 5;
@@ -5,47 +20,39 @@ const MAX_UPDATE_CATCHUP_FRAMES = 5;
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
 
-let i, j, method, systems, systemState, timeNow, timeDelta;
+let i, j, method, systems, systemState, systemRuntime, timeNow, timeDelta;
 
 export const World = {
 
-  initialize (initialState = {}) {
-    return World.resetRuntime(
-      Object.assign({}, {
-        world: {
-          debug: false,
-          lastEntityId: 0
-        },
-        systems: [],
-        components: {},
-        runtime: {},
-        modules: {
-          systems: {},
-          components: {}
-        }
-      }, initialState)
-    );
+  create (initialState = {}) {
+    return World.reset({
+      systems: [],
+      components: {},
+      lastEntityId: 0,
+      runtime: {},
+      modules: { systems: {}, components: {} },
+      ...initialState
+    });
   },
 
-  resetRuntime (state) {
+  reset (state) {
     state.runtime = {
       isRunning: false,
       isPaused: false,
       lastUpdateTime: Date.now(),
       updateAccumulator: 0,
-      lastDrawTime: 0
+      lastDrawTime: 0,
+      systems: []
     };
     return state;
   },
 
-  configureSystems (state, config) {
+  configure (state, config) {
     const systems = state.modules.systems;
     state.systems = config.map(item => {
-      if (typeof item === 'string') {
-        item = { name: item };
-      } else {
-        item = { name: item[0], ...item[1] };
-      }
+      item = typeof item === 'string'
+        ? { name: item }
+        : { name: item[0], ...item[1] };
       return item.name in systems
         ? systems[item.name].configure(item)
         : item;
@@ -56,17 +63,18 @@ export const World = {
   start (state) {
     // Bail if we're already running, otherwise reset the runtime
     if (state.runtime.isRunning) { return; }
-    World.resetRuntime(state);
+    World.reset(state);
 
     const { runtime } = state;
     runtime.isRunning = true;
 
-    // Allow all the systems to start
+    // Start up all the systems
     const systems = state.modules.systems;
     let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
       systemState = state.systems[i];
-      systems[systemState.name].start(state, systemState);
+      systemRuntime = state.runtime.systems[i] = {};
+      systems[systemState.name].start(state, systemState, systemRuntime);
     }
 
     // Fire up the update loop timer
@@ -96,10 +104,10 @@ export const World = {
 
     // Allow all the systems to stop
     const systems = state.modules.systems;
-    let i, systemState;
     for (i = 0; i < state.systems.length; i++) {
       systemState = state.systems[i];
-      systems[systemState.name].stop(state, systemState);
+      systemRuntime = state.runtime.systems[i];
+      systems[systemState.name].stop(state, systemState, systemRuntime);
     }
   },
 
@@ -149,7 +157,8 @@ export const World = {
       for (i = 0; i < state.systems.length; i++) {
         try {
           systemState = state.systems[i];
-          systems[systemState.name][method](state, systemState, timeDelta);
+          systemRuntime = state.runtime.systems[i];
+          systems[systemState.name][method](state, systemState, systemRuntime, timeDelta);
         } catch (e) {
           // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('update step', e);
@@ -166,7 +175,8 @@ export const World = {
       for (i = 0; i < state.systems.length; i++) {
         try {
           systemState = state.systems[i];
-          systems[systemState.name][method](state, systemState, timeDelta);
+          systemRuntime = state.runtime.systems[i];
+          systems[systemState.name][method](state, systemState, systemRuntime, timeDelta);
         } catch (e) {
           // eslint-disable-next-line no-console
           Math.random() < 0.01 && console.error('draw step', e);
@@ -175,7 +185,7 @@ export const World = {
     }
   },
 
-  installPlugins (state, plugins) {
+  install (state, plugins) {
     plugins.forEach(module =>
       ['systems', 'components'].forEach(type =>
         Object.keys(module[type] || {}).forEach(name =>
@@ -185,46 +195,21 @@ export const World = {
     );
   },
 
-  addComponent (state, entityId, componentName, componentAttrs = {}) {
-    const componentModule = state.modules.components[componentName];
-    const componentData = componentModule.create(componentAttrs);
-    if (!state.components[componentName]) {
-      state.components[componentName] = {};
-    }
-    state.components[componentName][entityId] = componentData;
-  },
-
-  removeComponent (state, entityId, componentName) {
-    if (entityId in state.components[componentName]) {
-      delete state.components[componentName][entityId];
-    }
-  },
-
-  hasComponent (state, entityId, componentName) {
-    return (componentName in state.components) &&
-           (entityId in state.components[componentName]);
-  },
-
-  get (state, componentName, entityId) {
-    if (!state.components[componentName]) {
-      return {};
-    } else if (!entityId) {
-      return state.components[componentName];
-    } else {
-      return state.components[componentName][entityId];
-    }
-  },
-
-  generateEntityId (state) { return ++(state.world.lastEntityId); },
+  generateId (state) { return ++(state.lastEntityId); },
 
   insert (state, ...items) {
     const out = [];
-    let idx, item, entityId, componentName, componentAttrs;
+    let idx, item, entityId, componentName, componentAttrs, componentModule, componentData;
     for (idx = 0; item = items[idx]; idx++) {
-      entityId = World.generateEntityId(state);
+      entityId = World.generateId(state);
       for (componentName in item) {
         componentAttrs = item[componentName];
-        World.addComponent(state, entityId, componentName, componentAttrs);
+        componentModule = state.modules.components[componentName];
+        componentData = componentModule.create(componentAttrs);
+        if (!state.components[componentName]) {
+          state.components[componentName] = {};
+        }
+        state.components[componentName][entityId] = componentData;
       }
       // if (this.world) this.world.publish(Messages.ENTITY_INSERT, entityId);
       out.push(entityId);
@@ -236,22 +221,34 @@ export const World = {
     let componentName;
     // if (this.world) this.world.publish(Messages.ENTITY_DESTROY, entityId);
     for (componentName in state.components) {
-      World.removeComponent(state, entityId, componentName);
+      if (entityId in state.components[componentName]) {
+        delete state.components[componentName][entityId];
+      }
+    }
+  },
+
+  get (state, componentName, entityId) {
+    if (!state.components[componentName]) {
+      return {};
+    } else if (!entityId) {
+      return state.components[componentName];
+    } else {
+      return state.components[componentName][entityId];
     }
   }
 
 };
 
 export const System = impl => ({
-  configure(config) { return config; },
-  start(/* state, systemState */) {},
-  stop(/* state, systemState */) {},
-  updateStart(/* state, systemState, timeDelta */) {},
-  update(/* state, systemState, timeDelta */) {},
-  updateEnd(/* state, systemState, timeDelta */) {},
-  drawStart(/* state, systemState, timeDelta */) {},
-  draw(/* state, systemState, timeDelta */) {},
-  drawEnd(/* state, systemState, timeDelta */) {},
+  configure: config => ({ debug: false, ...config }),
+  start(/* state, systemState, systemRuntime */) {},
+  stop(/* state, systemState, systemRuntime */) {},
+  updateStart(/* state, systemState, systemRuntime, timeDelta */) {},
+  update(/* state, systemState, systemRuntime, timeDelta */) {},
+  updateEnd(/* state, systemState, systemRuntime, timeDelta */) {},
+  drawStart(/* state, systemState, systemRuntime, timeDelta */) {},
+  draw(/* state, systemState, systemRuntime, timeDelta */) {},
+  drawEnd(/* state, systemState, systemRuntime, timeDelta */) {},
   ...impl
 });
 
@@ -260,12 +257,7 @@ export const Component = impl => ({
     return {};
   },
   create(attrs = {}) {
-    return {
-      ...this.defaults(),
-      ...attrs
-    };
+    return { ...this.defaults(), ...attrs };
   },
   ...impl
 });
-
-export default { World, System, Component };

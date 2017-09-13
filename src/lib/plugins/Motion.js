@@ -3,20 +3,11 @@ const { World, System, Component } = require('../Core');
 const PI2 = Math.PI * 2;
 
 const Motion = Component({
-  defaults: () => ({
-    dx: 0,
-    dy: 0,
-    drotation: 0
-  })
+  defaults: () => ({ dx: 0, dy: 0, drotation: 0 })
 });
 
 const MotionSystem = System({
-  configure: config => ({
-    debug: false,
-    ...config
-  }),
-
-  update (state, systemState, timeDelta) {
+  update (state, systemState, systemRuntime, timeDelta) {
     const motions = World.get(state, 'Motion');
     for (const entityId in motions) {
       const motion = motions[entityId];
@@ -26,12 +17,8 @@ const MotionSystem = System({
       position.y += motion.dy * timeDelta;
 
       // Update the rotation, ensuring a 0..2*Math.PI range.
-      position.rotation = (
-        position.rotation + motion.drotation * timeDelta
-      ) % PI2;
-      if (position.rotation < 0) {
-        position.rotation += PI2;
-      }
+      position.rotation = (position.rotation + motion.drotation * timeDelta) % PI2;
+      if (position.rotation < 0) { position.rotation += PI2; }
     }
   }
 });

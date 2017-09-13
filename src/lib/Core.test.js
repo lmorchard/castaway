@@ -1,14 +1,12 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import core from './Core';
+import { Component, System, World } from './Core';
 
-describe('core', () => {
+describe('Core', () => {
 
   beforeEach(() => global.reset());
 
   describe('Component()', () => {
-    const { Component } = core;
-
     it('should support defaults', () => {
       const expectedDefaults = { foo: 'bar', baz: 'quux' };
       const component = Component({ defaults: () => expectedDefaults });
@@ -22,33 +20,37 @@ describe('core', () => {
     });
   });
 
+  describe('System()', () => {
+    it('should have debug=false by default', () => {
+      const system = System();
+      expect(system.configure()).to.have.property('debug', false);
+    });
+  });
+
   describe('World', () => {
-    const { World, System, Component } = core;
 
-    it('should exist', () => expect(World).to.exist);
-
-    describe('initialize()', () => {
+    describe('create()', () => {
       it('should populate state with initial data', () => {
-        const state = World.initialize();
-        ['world', 'systems', 'components', 'runtime']
+        const state = World.create();
+        ['systems', 'components', 'runtime']
           .forEach(name => expect(state).to.have.property(name));
-        expect(state.world.lastEntityId).to.equal(0);
+        expect(state.lastEntityId).to.equal(0);
       });
     });
 
-    describe('configureSystems()', () => {
+    describe('configure()', () => {
       it('should populate system configuration', () => {
-        const state = World.initialize();
+        const state = World.create();
         const example1 = System({
           configure: config => ({ foo: 'yay', bar: 'rab', ...config })
         });
         const example2 = System({
           configure: config => ({ quux: 'zork', info: 'com', ...config })
         });
-        World.installPlugins(state, [
+        World.install(state, [
           { systems: { example1, example2 } }
         ]);
-        World.configureSystems(state, [
+        World.configure(state, [
           'example1',
           'example2',
           [ 'example1', { foo: 'bar' } ],
@@ -67,13 +69,13 @@ describe('core', () => {
 
     describe('start()', () => {
       it('should set isRunning to true', () => {
-        const state = World.initialize({ runtime: { isRunning: false } });
+        const state = World.create({ runtime: { isRunning: false } });
         World.start(state);
         expect(state.runtime.isRunning).to.be.true;
       });
 
       it('should schedule the first update & draw ticks only once', () => {
-        const state = World.initialize({ runtime: { isRunning: false } });
+        const state = World.create({ runtime: { isRunning: false } });
         [0, 1].forEach(() => {
           World.start(state);
           expect(global.setTimeout.callCount).to.equal(1);
@@ -82,7 +84,7 @@ describe('core', () => {
       });
 
       it('should start all the configured systems', () => {
-        const state = World.initialize({
+        const state = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -91,7 +93,7 @@ describe('core', () => {
         });
         const example1 = { start: sinon.spy(), };
         const example2 = { start: sinon.spy(), };
-        World.installPlugins(state, [
+        World.install(state, [
           { systems: { example1, example2 } }
         ]);
         World.start(state);
@@ -110,13 +112,13 @@ describe('core', () => {
 
     describe('stop()', () => {
       it('should set isRunning to false', () => {
-        const state = World.initialize({ runtime: { isRunning: true } });
+        const state = World.create({ runtime: { isRunning: true } });
         World.stop(state);
         expect(state.runtime.isRunning).to.be.false;
       });
 
       it('should stop all the configured systems', () => {
-        const state = World.initialize({
+        const state = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -125,7 +127,7 @@ describe('core', () => {
         });
         const example1 = System({ stop: sinon.spy() });
         const example2 = System({ stop: sinon.spy() });
-        World.installPlugins(state, [
+        World.install(state, [
           { systems: { example1, example2 } }
         ]);
         World.start(state);
@@ -161,7 +163,7 @@ describe('core', () => {
 
     describe('update()', () => {
       it('should call updateStart, update, and updateEnd functions for systems', () => {
-        const state = World.initialize({
+        const state = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -178,7 +180,7 @@ describe('core', () => {
           update: sinon.spy(),
           updateEnd: sinon.spy()
         };
-        World.installPlugins(state, [
+        World.install(state, [
           { systems: { example1, example2 } }
         ]);
         World.update(state, 10000);
@@ -200,7 +202,7 @@ describe('core', () => {
 
     describe('draw()', () => {
       it('should call drawStart, draw, and drawEnd functions for systems', () => {
-        const state = World.initialize({
+        const state = World.create({
           systems: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
@@ -217,7 +219,7 @@ describe('core', () => {
           draw: sinon.spy(),
           drawEnd: sinon.spy()
         };
-        World.installPlugins(state, [
+        World.install(state, [
           { systems: { example1, example2 } }
         ]);
         World.draw(state, 10000);
@@ -237,66 +239,31 @@ describe('core', () => {
       });
     });
 
-    describe('addComponent()', () => {
-      it('should add a component to the store', () => {
-        const state = World.initialize();
-        const component1 = Component({
-          defaults: () => ({ prop1: 'a', prop2: 'b' })
+    describe('generateId()', () => {
+      it('should produce a unique ID after several calls', () => {
+        const state = World.create();
+        const ids = [];
+        [0, 1, 2].forEach(() => {
+          const id = World.generateId(state);
+          expect(ids).to.not.contain(id);
+          ids.push(id);
         });
-        World.installPlugins(state, [ { components: { component1 } } ]);
-        World.addComponent(state, '9035768', 'component1');
-        World.addComponent(state, '8675309', 'component1', { prop2: 'xx', prop3: 'yy' });
-        expect(state.components).to.deep.equal({
-          component1: {
-            8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
-            9035768: { prop1: 'a', prop2: 'b' }
-          }
-        });
-      });
-    });
-
-    describe('removeComponent()', () => {
-      it('should remove a component from the store', () => {
-        const state = World.initialize({
-          components: {
-            component1: {
-              8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
-              9035768: { prop1: 'a', prop2: 'b' }
-            }
-          }
-        });
-        World.removeComponent(state, '9035768', 'component1');
-        expect(state.components).to.deep.equal({
-          component1: {
-            8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' }
-          }
-        });
-      });
-    });
-
-    const readOnlyState = World.initialize({
-      components: {
-        component1: {
-          8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
-          9035768: { prop1: 'a', prop2: 'b' }
-        },
-        component2: {
-          8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
-          9035768: { prop1: 'a', prop2: 'b' }
-        }
-      }
-    });
-
-    describe('hasComponent()', () => {
-      it('should check presence of a component is in the store', () => {
-        expect(World.hasComponent(readOnlyState, '8675309', 'component1')).to.be.true;
-        expect(World.hasComponent(readOnlyState, '9035768', 'component1')).to.be.true;
-        expect(World.hasComponent(readOnlyState, '999', 'component1')).to.be.false;
-        expect(World.hasComponent(readOnlyState, '8675309', 'goats')).to.be.false;
       });
     });
 
     describe('get()', () => {
+      const readOnlyState = World.create({
+        components: {
+          component1: {
+            8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
+            9035768: { prop1: 'a', prop2: 'b' }
+          },
+          component2: {
+            8675309: { prop1: 'a', prop2: 'xx', prop3: 'yy' },
+            9035768: { prop1: 'a', prop2: 'b' }
+          }
+        }
+      });
       it('should get component data from the store for a single entity', () => {
         expect(World.get(readOnlyState, 'component1', '8675309')).to.deep.equal({
           prop1: 'a', prop2: 'xx', prop3: 'yy'
@@ -313,27 +280,15 @@ describe('core', () => {
       });
     });
 
-    describe('generateEntityId()', () => {
-      it('should produce a unique ID after several calls', () => {
-        const state = World.initialize();
-        const ids = [];
-        [0, 1, 2].forEach(() => {
-          const id = World.generateEntityId(state);
-          expect(ids).to.not.contain(id);
-          ids.push(id);
-        });
-      });
-    });
-
     describe('insert()', () => {
       it('should accept a collection of components to create an entity', () => {
-        const state = World.initialize();
+        const state = World.create();
 
         const component1 = Component({ defaults: () => ({ prop1: 'a', prop2: 'b' }) });
         const component2 = Component({ defaults: () => ({ propA: '1', propB: '2' }) });
         const component3 = Component({ defaults: () => ({ propX: 'A', propY: 'B' }) });
 
-        World.installPlugins(state, [{
+        World.install(state, [{
           components: { component1, component2, component3 }
         }]);
 
@@ -366,7 +321,7 @@ describe('core', () => {
 
     describe('destroy()', () => {
       it('should remove all components for an entity', () => {
-        const state = World.initialize({
+        const state = World.create({
           components: {
             component1:
              { '1': { prop1: 'a', prop2: 'b', gabba: 'abba' },

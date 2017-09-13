@@ -16,7 +16,7 @@ const CanvasSprite = Component({
   }
 });
 
-let width, height, sprites, entityId, r, x, y;
+let width, height, sprites, entityId, x, y;
 
 const ViewportCanvasSystem = System({
   configure: config => ({
@@ -32,13 +32,9 @@ const ViewportCanvasSystem = System({
     ...config
   }),
 
-  start (state, systemState) {
-    if (state.runtime.viewportCanvas) { return; }
-
-    r = state.runtime.viewportCanvas = {
-      container: document.querySelector(systemState.container),
-      canvas: document.createElement('canvas')
-    };
+  start (state, systemState, r) {
+    r.container = document.querySelector(systemState.container);
+    r.canvas = document.createElement('canvas');
     r.ctx = r.canvas.getContext('2d');
     r.container.appendChild(r.canvas);
 
@@ -54,20 +50,15 @@ const ViewportCanvasSystem = System({
     }
   },
 
-  stop (state) {
-    r = state.runtime.viewportCanvas;
+  stop (state, systemState, r) {
     for (const name in r.events) {
       window.removeEventListener(name, r.events[name]);
     }
     try { r.container.removeChild(r.canvas); }
-    catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
-    }
+    catch (e) { console.error(e); } // eslint-disable-line no-console
   },
 
-  draw (state, systemState, timeDelta) {
-    r = state.runtime.viewportCanvas;
+  draw (state, systemState, r, timeDelta) {
     r.ctx.save();
     this.updateMetrics(state, systemState, r);
     this.clear(state, systemState, r, r.ctx);

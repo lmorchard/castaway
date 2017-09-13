@@ -4,17 +4,16 @@ import dat from 'dat-gui';
 
 let { World } = require('./lib/Core');
 
-const state = window.state = World.initialize();
-state.world.debug = true;
+const state = window.state = World.create();
 
 let plugins;
 function updatePlugins() {
   plugins = require.context('./lib/plugins', false, /\.js$/);
-  World.installPlugins(state, plugins.keys().map(key => plugins(key)));
+  World.install(state, plugins.keys().map(key => plugins(key)));
 }
 updatePlugins();
 
-World.configureSystems(state, [
+World.configure(state, [
   [ 'ViewportCanvas', { debug: true } ],
   'DrawStats',
   'Position',
@@ -42,7 +41,6 @@ const gui = new dat.GUI();
 
 const worldFolder = gui.addFolder('World');
 worldFolder.add(state.runtime, 'isPaused');
-worldFolder.add(state.world, 'debug');
 worldFolder.open();
 
 const vpf = gui.addFolder('Viewport');
