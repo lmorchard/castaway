@@ -44,7 +44,7 @@ worldFolder.add(world.runtime, 'isPaused');
 worldFolder.open();
 
 const vpf = gui.addFolder('Viewport');
-const vpconfig = world.systems.filter(system => system.name === 'ViewportCanvas')[0];
+const vpconfig = world.configs.filter(system => system.name === 'ViewportCanvas')[0];
 const names = [ 'gridEnabled' ];
 names.forEach(name => vpf.add(vpconfig, name).listen());
 vpf.add(vpconfig, 'zoom', 0.1, 2.0).step(0.1).listen();

@@ -1,7 +1,5 @@
 /* TODO
- * - provide runtime objects to systems in core loops
  * - plugins to port
- *   - position (quadtree)
  *   - bounce
  *   - collision
  *   - hordeSpawn
@@ -26,7 +24,7 @@ export const World = {
 
   create (initialWorld = {}) {
     return World.reset({
-      systems: [],
+      configs: [],
       components: {},
       lastEntityId: 0,
       runtime: {},
@@ -49,7 +47,7 @@ export const World = {
 
   configure (world, config) {
     const systems = world.modules.systems;
-    world.systems = config.map(item => {
+    world.configs = config.map(item => {
       item = typeof item === 'string'
         ? { name: item }
         : { name: item[0], ...item[1] };
@@ -70,11 +68,11 @@ export const World = {
 
     // Start up all the systems
     const systems = world.modules.systems;
-    for (i = 0; i < world.systems.length; i++) {
+    for (i = 0; i < world.configs.length; i++) {
       world.runtime.systems[i] = {};
-      systems[world.systems[i].name].start(
+      systems[world.configs[i].name].start(
         world,
-        world.systems[i],
+        world.configs[i],
         world.runtime.systems[i]
       );
     }
@@ -106,10 +104,10 @@ export const World = {
 
     // Allow all the systems to stop
     const systems = world.modules.systems;
-    for (i = 0; i < world.systems.length; i++) {
-      systems[world.systems[i].name].stop(
+    for (i = 0; i < world.configs.length; i++) {
+      systems[world.configs[i].name].stop(
         world,
-        world.systems[i],
+        world.configs[i],
         world.runtime.systems[i]
       );
     }
@@ -158,11 +156,11 @@ export const World = {
     systems = world.modules.systems;
     for (j = 0; j < UPDATE_METHODS.length; j++) {
       method = UPDATE_METHODS[j];
-      for (i = 0; i < world.systems.length; i++) {
+      for (i = 0; i < world.configs.length; i++) {
         try {
-          systems[world.systems[i].name][method](
+          systems[world.configs[i].name][method](
             world,
-            world.systems[i],
+            world.configs[i],
             world.runtime.systems[i],
             timeDelta
           );
@@ -179,11 +177,11 @@ export const World = {
     systems = world.modules.systems;
     for (j = 0; j < DRAW_METHODS.length; j++) {
       method = DRAW_METHODS[j];
-      for (i = 0; i < world.systems.length; i++) {
+      for (i = 0; i < world.configs.length; i++) {
         try {
-          systems[world.systems[i].name][method](
+          systems[world.configs[i].name][method](
             world,
-            world.systems[i],
+            world.configs[i],
             world.runtime.systems[i],
             timeDelta
           );

@@ -32,7 +32,7 @@ describe('Core', () => {
     describe('create()', () => {
       it('should populate world with initial data', () => {
         const world = World.create();
-        ['systems', 'components', 'runtime']
+        ['configs', 'components', 'runtime']
           .forEach(name => expect(world).to.have.property(name));
         expect(world.lastEntityId).to.equal(0);
       });
@@ -57,7 +57,7 @@ describe('Core', () => {
           [ 'example1', { bar: 'frotz' } ],
           [ 'example2', { quux: 'xyzzy' } ]
         ]);
-        expect(world.systems).to.deep.equal(
+        expect(world.configs).to.deep.equal(
           [ { foo: 'yay', bar: 'rab', name: 'example1' },
             { quux: 'zork', info: 'com', name: 'example2' },
             { foo: 'bar', bar: 'rab', name: 'example1' },
@@ -85,7 +85,7 @@ describe('Core', () => {
 
       it('should start all the configured systems', () => {
         const world = World.create({
-          systems: [
+          configs: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
             { name: 'example2', opt: 'third' }
@@ -101,12 +101,12 @@ describe('Core', () => {
         let fn;
         fn = example1.start;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(world.systems[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(world.configs[1]);
 
         fn = example2.start;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[2]);
       });
     });
 
@@ -119,7 +119,7 @@ describe('Core', () => {
 
       it('should stop all the configured systems', () => {
         const world = World.create({
-          systems: [
+          configs: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
             { name: 'example2', opt: 'third' }
@@ -136,12 +136,12 @@ describe('Core', () => {
         let fn;
         fn = example1.stop;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(world.systems[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(world.configs[1]);
 
         fn = example2.stop;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.systems[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[2]);
       });
     });
 
@@ -164,7 +164,7 @@ describe('Core', () => {
     describe('update()', () => {
       it('should call updateStart, update, and updateEnd functions for systems', () => {
         const world = World.create({
-          systems: [
+          configs: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
             { name: 'example2', opt: 'third' }
@@ -188,14 +188,14 @@ describe('Core', () => {
         ['updateStart', 'update', 'updateEnd'].forEach(name => {
           const fn1 = example1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(world.systems[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(world.systems[1]);
+          expect(fn1.firstCall.args[1]).to.deep.equal(world.configs[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(world.configs[1]);
         });
 
         ['updateStart', 'update', 'updateEnd'].forEach(name => {
           const fn2 = example2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(world.systems[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(world.configs[2]);
         });
       });
     });
@@ -203,7 +203,7 @@ describe('Core', () => {
     describe('draw()', () => {
       it('should call drawStart, draw, and drawEnd functions for systems', () => {
         const world = World.create({
-          systems: [
+          configs: [
             { name: 'example1', opt: 'first' },
             { name: 'example1', opt: 'second' },
             { name: 'example2', opt: 'third' }
@@ -227,14 +227,14 @@ describe('Core', () => {
         ['drawStart', 'draw', 'drawEnd'].forEach(name => {
           const fn1 = example1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(world.systems[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(world.systems[1]);
+          expect(fn1.firstCall.args[1]).to.deep.equal(world.configs[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(world.configs[1]);
         });
 
         ['drawStart', 'draw', 'drawEnd'].forEach(name => {
           const fn2 = example2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(world.systems[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(world.configs[2]);
         });
       });
     });
