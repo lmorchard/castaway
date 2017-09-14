@@ -8,7 +8,7 @@ const world = window.world = World.create();
 
 let plugins;
 function updatePlugins() {
-  plugins = require.context('./lib/plugins', false, /\.js$/);
+  plugins = require.context('./lib/plugins', false, /^(?!.*test).*\.js$/);
   World.install(world, plugins.keys().map(key => plugins(key)));
 }
 updatePlugins();
@@ -17,22 +17,33 @@ World.configure(world, [
   [ 'ViewportCanvas', { debug: true } ],
   'DrawStats',
   'Position',
-  'Motion'
+  'Motion',
+  'Collision',
+  'Thruster'
 ]);
 
 World.insert(world,
   { Name: { name: 'a1' },
     CanvasSprite: { name: 'hero' },
     Position: {},
-    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 } },
+    Collidable: {},
+    Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 },
+    Thruster: { deltaV: 100, maxV: 500 },
+  },
   { Name: { name: 'a2' },
     CanvasSprite: { name: 'asteroid' },
     Position: { x: 200, y: 0 },
-    Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 } },
+    Collidable: {},
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 },
+    Thruster: { deltaV: 100, maxV: 500 },
+  },
   { Name: { name: 'a3' },
     CanvasSprite: { name: 'enemyscout' },
     Position: { x: -200, y: 0 },
-    Motion: { dx: 0, dy: 0, drotation: -Math.PI } }
+    Collidable: {},
+    Motion: { dx: 0, dy: 0, drotation: -Math.PI },
+    Thruster: { deltaV: 100, maxV: 500 },
+  }
 );
 
 World.start(world);
@@ -40,7 +51,7 @@ World.start(world);
 const gui = new dat.GUI();
 
 const worldFolder = gui.addFolder('World');
-worldFolder.add(world.runtime, 'isPaused');
+worldFolder.add(world.runtime, 'isPaused').listen();
 worldFolder.open();
 
 const vpf = gui.addFolder('Viewport');

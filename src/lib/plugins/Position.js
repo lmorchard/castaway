@@ -50,10 +50,14 @@ const PositionSystem = System({
       runtime.bounds.right = runtime.bounds.bottom = 0;
     for (entityId in positions) {
       position = positions[entityId];
-      if (position.left < runtime.bounds.left) { runtime.bounds.left = position.left; }
-      if (position.top < runtime.bounds.top) { runtime.bounds.top = position.top; }
-      if (position.right > runtime.bounds.right) { runtime.bounds.right = position.right; }
-      if (position.bottom > runtime.bounds.bottom) { runtime.bounds.bottom = position.bottom; }
+      if (position.left < runtime.bounds.left)
+        { runtime.bounds.left = position.left; }
+      if (position.top < runtime.bounds.top)
+        { runtime.bounds.top = position.top; }
+      if (position.right > runtime.bounds.right)
+        { runtime.bounds.right = position.right; }
+      if (position.bottom > runtime.bounds.bottom)
+        { runtime.bounds.bottom = position.bottom; }
     }
     runtime.bounds.width = runtime.bounds.right - runtime.bounds.left;
     runtime.bounds.height = runtime.bounds.bottom - runtime.bounds.top;
@@ -72,6 +76,10 @@ const PositionSystem = System({
     for (entityId in positions) {
       runtime.quadtree.insert(position);
     }
+  },
+
+  searchQuadtree (world, config, runtime, ...args) {
+    return runtime.quadtree.iterate(...args);
   }
 
 });

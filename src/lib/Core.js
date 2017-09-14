@@ -1,15 +1,14 @@
 /* TODO
  * - plugins to port
- *   - bounce
+ *   - thruster
+ *   - steering
+ *   - spawn
  *   - collision
+ *   - bounce
  *   - hordeSpawn
  *   - playerInputSteering
  *   - repulsor
  *   - roadRunner
- *   - seeker
- *   - spawn
- *   - steering
- *   - thruster
  */
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
@@ -18,13 +17,13 @@ const MAX_UPDATE_CATCHUP_FRAMES = 5;
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
 
-let idx, item, entityId, i, j, method, systems, timeNow, timeDelta;
+let idx, item, entityId, method, systems, config, timeNow, timeDelta;
 
 export const World = {
 
   create (initialWorld = {}) {
     return World.reset({
-      lastEntityId: 0,
+      lastId: 0,
       components: {},
       configs: [],
       runtime: {},
@@ -68,6 +67,7 @@ export const World = {
 
     // Start up all the systems
     const systems = world.modules.systems;
+    let i;
     for (i = 0; i < world.configs.length; i++) {
       world.runtime.systems[i] = {};
       systems[world.configs[i].name].start(
@@ -104,6 +104,7 @@ export const World = {
 
     // Allow all the systems to stop
     const systems = world.modules.systems;
+    let i;
     for (i = 0; i < world.configs.length; i++) {
       systems[world.configs[i].name].stop(
         world,
@@ -118,9 +119,13 @@ export const World = {
     World.start(world);
   },
 
-  pause (world) { world.runtime.isPaused = true; },
+  pause (world) {
+    world.runtime.isPaused = true;
+  },
 
-  resume (world) { world.runtime.isPaused = false; },
+  resume (world) {
+    world.runtime.isPaused = false;
+  },
 
   updateLoop (world) {
     timeNow = Date.now();
@@ -154,6 +159,7 @@ export const World = {
   update (world, timeDeltaMS) {
     timeDelta = timeDeltaMS / 1000;
     systems = world.modules.systems;
+    let i, j;
     for (j = 0; j < UPDATE_METHODS.length; j++) {
       method = UPDATE_METHODS[j];
       for (i = 0; i < world.configs.length; i++) {
@@ -165,8 +171,8 @@ export const World = {
             timeDelta
           );
         } catch (e) {
-          // eslint-disable-next-line no-console
-          Math.random() < 0.01 && console.error('update step', e);
+          this.stop(world);
+          throw e;
         }
       }
     }
@@ -175,6 +181,7 @@ export const World = {
   draw (world, timeDeltaMS) {
     timeDelta = timeDeltaMS / 1000;
     systems = world.modules.systems;
+    let i, j;
     for (j = 0; j < DRAW_METHODS.length; j++) {
       method = DRAW_METHODS[j];
       for (i = 0; i < world.configs.length; i++) {
@@ -186,10 +193,20 @@ export const World = {
             timeDelta
           );
         } catch (e) {
-          // eslint-disable-next-line no-console
-          Math.random() < 0.01 && console.error('draw step', e);
+          this.stop(world);
+          throw e;
         }
       }
+    }
+  },
+
+  callSystem (world, systemName, fnName, ...args) {
+    for (let i = 0; i < world.configs.length; i++) {
+      config = world.configs[i];
+      if (config.name !== systemName) { continue; }
+      return world.modules.systems[config.name][fnName](
+        world, config, world.runtime.systems[i], ...args
+      );
     }
   },
 
@@ -203,7 +220,9 @@ export const World = {
     );
   },
 
-  generateId (world) { return ++(world.lastEntityId); },
+  generateId (world) {
+    return ++(world.lastId);
+  },
 
   insert (world, ...items) {
     const out = [];
@@ -239,7 +258,7 @@ export const World = {
     } else {
       return world.components[name][entityId];
     }
-  }
+  },
 
 };
 

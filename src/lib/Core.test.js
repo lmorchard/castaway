@@ -29,40 +29,76 @@ describe('Core', () => {
 
   describe('World', () => {
 
+    const exampleSystem1 = System({
+      configure: config => ({ foo: 'yay', bar: 'rab', ...config }),
+      start: sinon.spy(),
+      stop: sinon.spy(),
+      drawStart: sinon.spy(),
+      draw: sinon.spy(),
+      drawEnd: sinon.spy(),
+      updateStart: sinon.spy(),
+      update: sinon.spy(),
+      updateEnd: sinon.spy(),
+      toBeCalled: sinon.spy(
+        (world, config, runtime, ...args) => ['called1', ...args]
+      )
+    });
+
+    const exampleSystem2 = System({
+      configure: config => ({ quux: 'zork', info: 'com', ...config }),
+      start: sinon.spy(),
+      stop: sinon.spy(),
+      drawStart: sinon.spy(),
+      draw: sinon.spy(),
+      drawEnd: sinon.spy(),
+      updateStart: sinon.spy(),
+      update: sinon.spy(),
+      updateEnd: sinon.spy(),
+      toBeCalled: sinon.spy(
+        (world, config, runtime, ...args) => ['called2', ...args]
+      )
+    });
+
+    const commonWorld = World.create({
+      configs: [
+        { name: 'exampleSystem1', opt: 'first' },
+        { name: 'exampleSystem1', opt: 'second' },
+        { name: 'exampleSystem2', opt: 'third' }
+      ]
+    });
+
+    World.install(commonWorld, [
+      { systems: { exampleSystem1, exampleSystem2 } }
+    ]);
+
     describe('create()', () => {
       it('should populate world with initial data', () => {
         const world = World.create();
         ['configs', 'components', 'runtime']
           .forEach(name => expect(world).to.have.property(name));
-        expect(world.lastEntityId).to.equal(0);
+        expect(world.lastId).to.equal(0);
       });
     });
 
     describe('configure()', () => {
       it('should populate system configuration', () => {
         const world = World.create();
-        const example1 = System({
-          configure: config => ({ foo: 'yay', bar: 'rab', ...config })
-        });
-        const example2 = System({
-          configure: config => ({ quux: 'zork', info: 'com', ...config })
-        });
         World.install(world, [
-          { systems: { example1, example2 } }
+          { systems: { exampleSystem1, exampleSystem2 } }
         ]);
         World.configure(world, [
-          'example1',
-          'example2',
-          [ 'example1', { foo: 'bar' } ],
-          [ 'example1', { bar: 'frotz' } ],
-          [ 'example2', { quux: 'xyzzy' } ]
+          'exampleSystem1',
+          'exampleSystem2',
+          [ 'exampleSystem1', { foo: 'bar' } ],
+          [ 'exampleSystem1', { bar: 'frotz' } ],
+          [ 'exampleSystem2', { quux: 'xyzzy' } ]
         ]);
         expect(world.configs).to.deep.equal(
-          [ { foo: 'yay', bar: 'rab', name: 'example1' },
-            { quux: 'zork', info: 'com', name: 'example2' },
-            { foo: 'bar', bar: 'rab', name: 'example1' },
-            { foo: 'yay', bar: 'frotz', name: 'example1' },
-            { quux: 'xyzzy', info: 'com', name: 'example2' } ]
+          [ { foo: 'yay', bar: 'rab', name: 'exampleSystem1' },
+            { quux: 'zork', info: 'com', name: 'exampleSystem2' },
+            { foo: 'bar', bar: 'rab', name: 'exampleSystem1' },
+            { foo: 'yay', bar: 'frotz', name: 'exampleSystem1' },
+            { quux: 'xyzzy', info: 'com', name: 'exampleSystem2' } ]
         );
       });
     });
@@ -84,29 +120,17 @@ describe('Core', () => {
       });
 
       it('should start all the configured systems', () => {
-        const world = World.create({
-          configs: [
-            { name: 'example1', opt: 'first' },
-            { name: 'example1', opt: 'second' },
-            { name: 'example2', opt: 'third' }
-          ]
-        });
-        const example1 = { start: sinon.spy(), };
-        const example2 = { start: sinon.spy(), };
-        World.install(world, [
-          { systems: { example1, example2 } }
-        ]);
-        World.start(world);
+        World.start(commonWorld);
 
         let fn;
-        fn = example1.start;
+        fn = exampleSystem1.start;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(world.configs[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(commonWorld.configs[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(commonWorld.configs[1]);
 
-        fn = example2.start;
+        fn = exampleSystem2.start;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(commonWorld.configs[2]);
       });
     });
 
@@ -118,30 +142,18 @@ describe('Core', () => {
       });
 
       it('should stop all the configured systems', () => {
-        const world = World.create({
-          configs: [
-            { name: 'example1', opt: 'first' },
-            { name: 'example1', opt: 'second' },
-            { name: 'example2', opt: 'third' }
-          ]
-        });
-        const example1 = System({ stop: sinon.spy() });
-        const example2 = System({ stop: sinon.spy() });
-        World.install(world, [
-          { systems: { example1, example2 } }
-        ]);
-        World.start(world);
-        World.stop(world);
+        World.start(commonWorld);
+        World.stop(commonWorld);
 
         let fn;
-        fn = example1.stop;
+        fn = exampleSystem1.stop;
         expect(fn.callCount).to.equal(2);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[0]);
-        expect(fn.secondCall.args[1]).to.deep.equal(world.configs[1]);
+        expect(fn.firstCall.args[1]).to.deep.equal(commonWorld.configs[0]);
+        expect(fn.secondCall.args[1]).to.deep.equal(commonWorld.configs[1]);
 
-        fn = example2.stop;
+        fn = exampleSystem2.stop;
         expect(fn.callCount).to.equal(1);
-        expect(fn.firstCall.args[1]).to.deep.equal(world.configs[2]);
+        expect(fn.firstCall.args[1]).to.deep.equal(commonWorld.configs[2]);
       });
     });
 
@@ -163,79 +175,44 @@ describe('Core', () => {
 
     describe('update()', () => {
       it('should call updateStart, update, and updateEnd functions for systems', () => {
-        const world = World.create({
-          configs: [
-            { name: 'example1', opt: 'first' },
-            { name: 'example1', opt: 'second' },
-            { name: 'example2', opt: 'third' }
-          ]
-        });
-        const example1 = {
-          updateStart: sinon.spy(),
-          update: sinon.spy(),
-          updateEnd: sinon.spy()
-        };
-        const example2 = {
-          updateStart: sinon.spy(),
-          update: sinon.spy(),
-          updateEnd: sinon.spy()
-        };
-        World.install(world, [
-          { systems: { example1, example2 } }
-        ]);
-        World.update(world, 10000);
-
+        World.update(commonWorld, 10000);
         ['updateStart', 'update', 'updateEnd'].forEach(name => {
-          const fn1 = example1[name];
+          const fn1 = exampleSystem1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(world.configs[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(world.configs[1]);
-        });
+          expect(fn1.firstCall.args[1]).to.deep.equal(commonWorld.configs[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(commonWorld.configs[1]);
 
-        ['updateStart', 'update', 'updateEnd'].forEach(name => {
-          const fn2 = example2[name];
+          const fn2 = exampleSystem2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(world.configs[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(commonWorld.configs[2]);
         });
       });
     });
 
     describe('draw()', () => {
       it('should call drawStart, draw, and drawEnd functions for systems', () => {
-        const world = World.create({
-          configs: [
-            { name: 'example1', opt: 'first' },
-            { name: 'example1', opt: 'second' },
-            { name: 'example2', opt: 'third' }
-          ]
-        });
-        const example1 = {
-          drawStart: sinon.spy(),
-          draw: sinon.spy(),
-          drawEnd: sinon.spy()
-        };
-        const example2 = {
-          drawStart: sinon.spy(),
-          draw: sinon.spy(),
-          drawEnd: sinon.spy()
-        };
-        World.install(world, [
-          { systems: { example1, example2 } }
-        ]);
-        World.draw(world, 10000);
-
+        World.draw(commonWorld, 10000);
         ['drawStart', 'draw', 'drawEnd'].forEach(name => {
-          const fn1 = example1[name];
+          const fn1 = exampleSystem1[name];
           expect(fn1.callCount).to.equal(2);
-          expect(fn1.firstCall.args[1]).to.deep.equal(world.configs[0]);
-          expect(fn1.secondCall.args[1]).to.deep.equal(world.configs[1]);
-        });
+          expect(fn1.firstCall.args[1]).to.deep.equal(commonWorld.configs[0]);
+          expect(fn1.secondCall.args[1]).to.deep.equal(commonWorld.configs[1]);
 
-        ['drawStart', 'draw', 'drawEnd'].forEach(name => {
-          const fn2 = example2[name];
+          const fn2 = exampleSystem2[name];
           expect(fn2.callCount).to.equal(1);
-          expect(fn2.firstCall.args[1]).to.deep.equal(world.configs[2]);
+          expect(fn2.firstCall.args[1]).to.deep.equal(commonWorld.configs[2]);
         });
+      });
+    });
+
+    describe('callSystem()', () => {
+      it('should call a function on a system', () => {
+        const result1 = World.callSystem(commonWorld, 'exampleSystem1',
+                                         'toBeCalled', 'passed1');
+        expect(result1).to.deep.equal([ 'called1', 'passed1' ]);
+        const result2 = World.callSystem(commonWorld, 'exampleSystem2',
+                                         'toBeCalled', 'passed2');
+        expect(result2).to.deep.equal([ 'called2', 'passed2' ]);
       });
     });
 
