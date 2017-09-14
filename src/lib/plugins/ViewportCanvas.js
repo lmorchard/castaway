@@ -88,7 +88,7 @@ const ViewportCanvasSystem = System({
   },
 
   clear (world, config, r, ctx) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
     ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
   },
 

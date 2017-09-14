@@ -4,12 +4,13 @@
   "description": "engine without a state",
   "main": "src/index.js",
   "scripts": {
-    "dev": "npm-run-all --parallel start test:watch",
-    "start": "NODE_ENV=development webpack-dev-server",
+    "start": "npm run server",
+    "dev": "npm-run-all --parallel server test:watch",
+    "server": "NODE_ENV=development webpack-dev-server",
     "build": "webpack -p",
     "lint": "eslint --color src test",
     "lint:watch": "onchange -p -v \"src/**/*.js\" \"test/**/*.js\" -- npm run lint",
-    "test": "mocha --colors --compilers js:babel-core/register --require test-setup.js 'src/**/*.test.js'",
+    "test": "mocha --colors --reporter dot --compilers js:babel-core/register --require test-setup.js 'src/**/*.test.js'",
     "test:watch": "npm run test -- --watch"
   },
   "author": "Les Orchard <me@lmorchard.com>",

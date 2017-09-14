@@ -17,21 +17,25 @@ World.configure(world, [
   [ 'ViewportCanvas', { debug: true } ],
   'DrawStats',
   'Position',
-  'Motion'
+  'Motion',
+  'Collision'
 ]);
 
 World.insert(world,
   { Name: { name: 'a1' },
     CanvasSprite: { name: 'hero' },
     Position: {},
+    Collidable: {},
     Motion: { dx: 0, dy: 0, drotation: Math.PI / 2 } },
   { Name: { name: 'a2' },
     CanvasSprite: { name: 'asteroid' },
     Position: { x: 200, y: 0 },
+    Collidable: {},
     Motion: { dx: 0, dy: 0, drotation: -Math.PI / 3 } },
   { Name: { name: 'a3' },
     CanvasSprite: { name: 'enemyscout' },
     Position: { x: -200, y: 0 },
+    Collidable: {},
     Motion: { dx: 0, dy: 0, drotation: -Math.PI } }
 );
 
@@ -40,7 +44,7 @@ World.start(world);
 const gui = new dat.GUI();
 
 const worldFolder = gui.addFolder('World');
-worldFolder.add(world.runtime, 'isPaused');
+worldFolder.add(world.runtime, 'isPaused').listen();
 worldFolder.open();
 
 const vpf = gui.addFolder('Viewport');

@@ -1,15 +1,14 @@
 /* TODO
  * - plugins to port
- *   - bounce
+ *   - thruster
+ *   - steering
+ *   - spawn
  *   - collision
+ *   - bounce
  *   - hordeSpawn
  *   - playerInputSteering
  *   - repulsor
  *   - roadRunner
- *   - seeker
- *   - spawn
- *   - steering
- *   - thruster
  */
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
@@ -18,13 +17,13 @@ const MAX_UPDATE_CATCHUP_FRAMES = 5;
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
 
-let idx, item, entityId, i, j, method, systems, timeNow, timeDelta;
+let idx, item, entityId, i, j, method, systems, config, timeNow, timeDelta;
 
 export const World = {
 
   create (initialWorld = {}) {
     return World.reset({
-      lastEntityId: 0,
+      lastId: 0,
       components: {},
       configs: [],
       runtime: {},
@@ -118,9 +117,13 @@ export const World = {
     World.start(world);
   },
 
-  pause (world) { world.runtime.isPaused = true; },
+  pause (world) {
+    world.runtime.isPaused = true;
+  },
 
-  resume (world) { world.runtime.isPaused = false; },
+  resume (world) {
+    world.runtime.isPaused = false;
+  },
 
   updateLoop (world) {
     timeNow = Date.now();
@@ -165,8 +168,8 @@ export const World = {
             timeDelta
           );
         } catch (e) {
-          // eslint-disable-next-line no-console
-          Math.random() < 0.01 && console.error('update step', e);
+          this.stop(world);
+          throw e;
         }
       }
     }
@@ -186,8 +189,8 @@ export const World = {
             timeDelta
           );
         } catch (e) {
-          // eslint-disable-next-line no-console
-          Math.random() < 0.01 && console.error('draw step', e);
+          this.stop(world);
+          throw e;
         }
       }
     }
@@ -203,7 +206,9 @@ export const World = {
     );
   },
 
-  generateId (world) { return ++(world.lastEntityId); },
+  generateId (world) {
+    return ++(world.lastId);
+  },
 
   insert (world, ...items) {
     const out = [];
@@ -238,6 +243,22 @@ export const World = {
       return world.components[name];
     } else {
       return world.components[name][entityId];
+    }
+  },
+
+  callSystem (world, systemName, fnName, ...args) {
+    for (i = 0; i < world.configs.length; i++) {
+      config = world.configs[i];
+      if (config.name !== systemName) { continue; }
+      return Math.random() < 0.01 && console.log('call', systemName, fnName);
+      /*
+      return world.modules.systems[config.name][fnName](
+        world,
+        config,
+        world.runtime.systems[i],
+        ...args
+      );
+      */
     }
   }
 

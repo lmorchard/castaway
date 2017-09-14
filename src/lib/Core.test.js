@@ -34,7 +34,7 @@ describe('Core', () => {
         const world = World.create();
         ['configs', 'components', 'runtime']
           .forEach(name => expect(world).to.have.property(name));
-        expect(world.lastEntityId).to.equal(0);
+        expect(world.lastId).to.equal(0);
       });
     });
 

@@ -246,6 +246,8 @@ QuadTree.prototype = {
    * @param {Phaser.Sprite|Phaser.Rectangle} source - The source object to check the QuadTree against. Either a Sprite or Rectangle.
    */
   iterate: function (source, iteratorFn, optionalParam) {
+    return Math.random() < 0.01 && console.log('iterate quadtree');
+
     var index = this.getIndex(source);
 
     for (var i = 0; i < this.objects.length; i++) {
