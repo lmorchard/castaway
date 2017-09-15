@@ -25,15 +25,17 @@ World.configure(world, [
 ]);
 
 World.insert(world,
-  { Name: { name: 'a1' },
+  {
+    Name: { name: 'a1' },
     CanvasSprite: { name: 'hero' },
-    Position: { },
+    Position: { rotation: Math.PI },
     Collidable: { },
     Motion: { dx: 0, dy: 0, drotation: 0 },
-    // Thruster: { deltaV: 100, maxV: 500 },
+    Thruster: { deltaV: 100, maxV: 500 },
     Bounce: { },
   },
-  { Name: { name: 'a2' },
+  {
+    Name: { name: 'a2' },
     CanvasSprite: { name: 'asteroid' },
     Position: { x: 200, y: 0, rotation: Math.PI },
     Collidable: { },
@@ -41,13 +43,14 @@ World.insert(world,
     Thruster: { deltaV: 100, maxV: 500 },
     Bounce: { },
   },
-  { Name: { name: 'a3' },
+  {
+    Name: { name: 'a3' },
     CanvasSprite: { name: 'enemyscout' },
     Position: { x: -200, y: 0, rotation: 0 },
     Collidable: { },
     Motion: { dx: 0, dy: 0, drotation: 0 },
-    Thruster: { deltaV: 100, maxV: 500 },
-    Bounce: { },
+    Thruster: { deltaV: 200, maxV: 600 },
+    Bounce: { mass: 100000 },
   }
 );
 
@@ -58,6 +61,16 @@ const gui = new dat.GUI();
 const worldFolder = gui.addFolder('World');
 worldFolder.add(world.runtime, 'isPaused').listen();
 worldFolder.open();
+
+const debugVPFolder = gui.addFolder('DebugCanvas');
+world.configs
+  .filter(s => s.name === 'DebugCanvas')
+  .forEach(c =>
+    ['debug'].forEach(name =>
+      debugVPFolder.add(c, name).listen()
+    )
+  );
+debugVPFolder.open();
 
 const vpf = gui.addFolder('Viewport');
 const vpconfig = world.configs.filter(system => system.name === 'ViewportCanvas')[0];

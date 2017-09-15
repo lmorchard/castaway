@@ -63,12 +63,12 @@ const BounceSystem = System({
     const bMotion = World.get(world, 'Motion', bEntityId);
 
     // First, back both entities off to try to prevent sticking
-    /*
     aPosition.x -= aMotion.dx * timeDelta;
     aPosition.y -= aMotion.dy * timeDelta;
     bPosition.x -= bMotion.dx * timeDelta;
     bPosition.y -= bMotion.dy * timeDelta;
-    const radii, dx, dy;
+    /*
+    let radii, dx, dy;
     while (true) {
       aPosition.x -= aMotion.dx * timeDelta;
       aPosition.y -= aMotion.dy * timeDelta;

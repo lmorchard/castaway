@@ -1,7 +1,7 @@
 import { World, System, Component } from '../Core';
 import QuadTree from '../QuadTree';
 
-let entityId, sprite, position, positions;
+let entityId, position, positions;
 const PI2 = Math.PI * 2;
 
 const Position = Component({
@@ -77,7 +77,7 @@ const PositionSystem = System({
 
     // Index all the positions in the quadtree
     for (entityId in positions) {
-      runtime.quadtree.insert(position);
+      runtime.quadtree.insert(positions[entityId]);
     }
   },
 
@@ -88,6 +88,7 @@ const PositionSystem = System({
   drawDebug (world, config, runtime, timeDelta, g) {
     if (!config.debug) { return; }
 
+    g.beginPath();
     g.lineWidth = 4;
     g.strokeStyle = g.fillStyle = '#882222';
     positions = World.get(world, 'Position');
@@ -103,10 +104,12 @@ const PositionSystem = System({
     }
     g.stroke();
 
+    g.beginPath();
     g.strokeStyle = g.fillStyle = '#228822';
     this.drawDebugQuadtreeNode(g, runtime.quadtree);
     g.stroke();
 
+    g.beginPath();
     g.strokeStyle = g.fillStyle = '#ffff33';
     g.rect(
       runtime.bounds.left,
@@ -120,14 +123,18 @@ const PositionSystem = System({
   drawDebugQuadtreeNode(g, root) {
     if (!root) { return; }
 
+    g.beginPath();
     g.strokeStyle = g.fillStyle = '#883388';
     g.moveTo(root.bounds.left, root.bounds.top);
     g.rect(root.bounds.left, root.bounds.top, root.bounds.width, root.bounds.height);
+    g.stroke();
 
-    g.strokeStyle = g.fillStyle = '#112222';
     root.objects.forEach(body => {
+      g.beginPath();
+      g.strokeStyle = g.fillStyle = '#338833';
       g.moveTo(body.left, body.top);
       g.rect(body.left, body.top, body.width, body.height);
+      g.stroke();
     });
 
     this.drawDebugQuadtreeNode(g, root.nodes[0]);
