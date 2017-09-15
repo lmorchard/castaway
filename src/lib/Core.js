@@ -1,14 +1,11 @@
 /* TODO
  * - plugins to port
- *   - thruster
- *   - steering
- *   - spawn
- *   - collision
- *   - bounce
- *   - hordeSpawn
  *   - playerInputSteering
- *   - repulsor
+ *   - steering
  *   - roadRunner
+ *   - spawn
+ *   - hordeSpawn
+ *   - repulsor
  */
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;

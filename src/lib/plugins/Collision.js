@@ -20,7 +20,7 @@ const CollisionSystem = System({
     };
   },
 
-  update (world, config) {
+  update (world) {
     const collidables = World.get(world, 'Collidable');
     for (entityId in collidables) {
       collidable = collidables[entityId];
@@ -32,10 +32,19 @@ const CollisionSystem = System({
     for (const entityId in collidables) {
       position = World.get(world, 'Position', entityId);
       if (position) {
+        // HACK: brute force check of all entities against all entities
+        Object.keys(collidables).forEach(bid =>
+          bid !== entityId && this.checkCollision(
+            World.get(world, 'Position', bid),
+            [world, position]
+          )
+        );
+        /* TODO fix quadtree search!
         World.callSystem(
           world, config.positionSystemName, 'searchQuadtree',
           position, this.checkCollision, [world, position]
         );
+        */
       }
     }
   },
