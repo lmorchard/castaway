@@ -3,7 +3,7 @@ import { System } from '../Core';
 const DebugCanvasSystem = System({
 
   configure: config => ({
-    debug: true,
+    debug: false,
     container: '#game',
     debugText: true,
     viewportName: 'ViewportCanvas',

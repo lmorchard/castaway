@@ -62,7 +62,7 @@ const worldFolder = gui.addFolder('World');
 worldFolder.add(world.runtime, 'isPaused').listen();
 worldFolder.open();
 
-const vpf = gui.addFolder('Viewport');
+const vpf = gui.addFolder('ViewportCanvas');
 const vpconfig = world.configs.filter(system => system.name === 'ViewportCanvas')[0];
 const names = [ 'gridEnabled' ];
 names.forEach(name => vpf.add(vpconfig, name).listen());
