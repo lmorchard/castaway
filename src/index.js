@@ -17,7 +17,7 @@ World.configure(world, [
   [ 'ViewportCanvas', { debug: true } ],
   'DebugCanvas',
   'DrawStats',
-  ['Position', { debug: true } ],
+  'Position',
   'Motion',
   'Thruster',
   'Collision',
@@ -62,23 +62,20 @@ const worldFolder = gui.addFolder('World');
 worldFolder.add(world.runtime, 'isPaused').listen();
 worldFolder.open();
 
-const debugVPFolder = gui.addFolder('DebugCanvas');
-world.configs
-  .filter(s => s.name === 'DebugCanvas')
-  .forEach(c =>
-    ['debug'].forEach(name =>
-      debugVPFolder.add(c, name).listen()
-    )
-  );
-debugVPFolder.open();
-
 const vpf = gui.addFolder('Viewport');
 const vpconfig = world.configs.filter(system => system.name === 'ViewportCanvas')[0];
 const names = [ 'gridEnabled' ];
 names.forEach(name => vpf.add(vpconfig, name).listen());
 vpf.add(vpconfig, 'zoom', 0.1, 2.0).step(0.1).listen();
 vpf.add(vpconfig, 'lineWidth', 1.0, 4.0).step(0.5).listen();
-vpf.open();
+
+const systemFolders = {};
+['DebugCanvas', 'Position'].forEach(systemName => {
+  const folder = systemFolders[systemName] = gui.addFolder(systemName);
+  world.configs
+    .filter(s => s.name === systemName)
+    .forEach(c => folder.add(c, 'debug').listen());
+});
 
 if (module.hot) {
   module.hot.accept(plugins.id, () => {
