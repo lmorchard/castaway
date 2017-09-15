@@ -88,8 +88,7 @@ const ViewportCanvasSystem = System({
   },
 
   clear (world, config, r, ctx) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
-    ctx.fillRect(0, 0, r.canvas.width, r.canvas.height);
+    ctx.clearRect(0, 0, r.canvas.width, r.canvas.height);
   },
 
   centerAndZoom (world, config, r, ctx) {

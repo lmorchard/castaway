@@ -1,6 +1,9 @@
 import { World, System, Component } from '../Core';
 import QuadTree from '../QuadTree';
 
+let entityId, sprite, position, positions;
+const PI2 = Math.PI * 2;
+
 const Position = Component({
   defaults: () => ({ x: 0, y: 0, rotation: 0, size: 100 })
 });
@@ -80,6 +83,57 @@ const PositionSystem = System({
 
   searchQuadtree (world, config, runtime, ...args) {
     return runtime.quadtree.iterate(...args);
+  },
+
+  drawDebug (world, config, runtime, timeDelta, g) {
+    if (!config.debug) { return; }
+
+    g.lineWidth = 4;
+    g.strokeStyle = g.fillStyle = '#882222';
+    positions = World.get(world, 'Position');
+
+    for (entityId in positions) {
+      position = positions[entityId];
+      g.moveTo(position.x + position.size/2, position.y);
+      g.arc(position.x, position.y, position.size / 2, 0, PI2);
+      g.moveTo(position.x - 20, position.y);
+      g.lineTo(position.x + 20, position.y);
+      g.moveTo(position.x, position.y - 20);
+      g.lineTo(position.x, position.y + 20);
+    }
+    g.stroke();
+
+    g.strokeStyle = g.fillStyle = '#228822';
+    this.drawDebugQuadtreeNode(g, runtime.quadtree);
+    g.stroke();
+
+    g.strokeStyle = g.fillStyle = '#ffff33';
+    g.rect(
+      runtime.bounds.left,
+      runtime.bounds.top,
+      runtime.bounds.width,
+      runtime.bounds.height
+    );
+    g.stroke();
+  },
+
+  drawDebugQuadtreeNode(g, root) {
+    if (!root) { return; }
+
+    g.strokeStyle = g.fillStyle = '#883388';
+    g.moveTo(root.bounds.left, root.bounds.top);
+    g.rect(root.bounds.left, root.bounds.top, root.bounds.width, root.bounds.height);
+
+    g.strokeStyle = g.fillStyle = '#112222';
+    root.objects.forEach(body => {
+      g.moveTo(body.left, body.top);
+      g.rect(body.left, body.top, body.width, body.height);
+    });
+
+    this.drawDebugQuadtreeNode(g, root.nodes[0]);
+    this.drawDebugQuadtreeNode(g, root.nodes[1]);
+    this.drawDebugQuadtreeNode(g, root.nodes[2]);
+    this.drawDebugQuadtreeNode(g, root.nodes[3]);
   }
 
 });

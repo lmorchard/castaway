@@ -15,8 +15,9 @@ updatePlugins();
 
 World.configure(world, [
   [ 'ViewportCanvas', { debug: true } ],
+  'DebugCanvas',
   'DrawStats',
-  'Position',
+  ['Position', { debug: true } ],
   'Motion',
   'Thruster',
   'Collision',
