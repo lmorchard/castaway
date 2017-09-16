@@ -44,7 +44,6 @@ const SpawnSystem = System({
         if (spawn.age >= spawn.ttl) {
           spawn.destroy = true;
         }
-        Math.random() < 0.01 && console.log(spawn);
       }
 
       if (spawn.destroy) {
