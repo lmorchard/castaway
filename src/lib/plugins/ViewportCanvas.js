@@ -144,7 +144,7 @@ const ViewportCanvasSystem = System({
     ctx.save();
     ctx.translate(position.x, position.y);
     ctx.rotate(position.rotation + Math.PI/2);
-    ctx.scale(sprite.size / 100, sprite.size / 100);
+    ctx.scale(position.size / 100, position.size / 100);
     // HACK: Try to keep line width consistent regardless of zoom, to sort of
     // simulate a vector display
     ctx.lineWidth = config.lineWidth / config.zoom / (sprite.size / 100);
