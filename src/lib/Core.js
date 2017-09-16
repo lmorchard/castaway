@@ -1,6 +1,5 @@
 /* TODO
  * - plugins to port
- *   - playerInputSteering
  *   - steering
  *   - roadRunner
  *   - spawn
@@ -14,7 +13,7 @@ const MAX_UPDATE_CATCHUP_FRAMES = 5;
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
 
-let idx, item, entityId, method, systems, config, timeNow, timeDelta;
+let tmp, idx, item, entityId, method, systems, config, timeNow, timeDelta;
 
 export const World = {
 
@@ -22,6 +21,8 @@ export const World = {
     return World.reset({
       lastId: 0,
       components: {},
+      inbox: [],
+      outbox: [],
       configs: [],
       runtime: {},
       modules: { systems: {}, components: {} },
@@ -154,6 +155,12 @@ export const World = {
   },
 
   update (world, timeDeltaMS) {
+    // Swap inbox & outbox on every frame, clear inbox
+    tmp = world.outbox;
+    world.outbox = world.inbox;
+    world.inbox = tmp;
+    tmp.length = 0;
+
     timeDelta = timeDeltaMS / 1000;
     systems = world.modules.systems;
     let i, j;
@@ -195,6 +202,16 @@ export const World = {
         }
       }
     }
+  },
+
+  send (world, topic, data) {
+    world.inbox.push([data, topic]);
+  },
+
+  receive (world, topic, handler) {
+    world.outbox
+      .filter(m => m[1] === topic)
+      .forEach(m => handler(...m));
   },
 
   callSystem (world, systemName, fnName, ...args) {

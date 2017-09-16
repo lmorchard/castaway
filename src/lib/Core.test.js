@@ -205,6 +205,28 @@ describe('Core', () => {
       });
     });
 
+
+    describe('send() / receive()', () => {
+      it('send() should yield messages to receive() on the next frame', () => {
+        const expectedTopic = 'ping';
+        const expectedData = 'hello';
+
+        World.update(commonWorld, 16);
+        World.send(commonWorld, expectedTopic, expectedData);
+
+        World.update(commonWorld, 16);
+        World.receive(commonWorld, expectedTopic, (data, topic) => {
+          expect(topic).to.equal(expectedTopic);
+          expect(data).to.equal(expectedData);
+        });
+
+        World.update(commonWorld, 16);
+        let wasCalled = false;
+        World.receive(commonWorld, expectedTopic, () => wasCalled = true);
+        expect(wasCalled).to.be.false;
+      });
+    });
+
     describe('callSystem()', () => {
       it('should call a function on a system', () => {
         const result1 = World.callSystem(commonWorld, 'exampleSystem1',

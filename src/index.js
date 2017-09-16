@@ -20,9 +20,9 @@ World.configure(world, [
   'Position',
   'Motion',
   'Thruster',
-  'PlayerInputSteering',
   'Collision',
   'Bounce',
+  'PlayerInputSteering',
 ]);
 
 World.insert(world,
