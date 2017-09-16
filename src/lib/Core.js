@@ -209,9 +209,11 @@ export const World = {
   },
 
   receive (world, topic, handler) {
-    world.outbox
-      .filter(m => m[1] === topic)
-      .forEach(m => handler(...m));
+    for (let i = 0; i < world.outbox.length; i++) {
+      if (world.outbox[i][1] === topic) {
+        handler(...world.outbox[i]);
+      }
+    }
   },
 
   callSystem (world, systemName, fnName, ...args) {
