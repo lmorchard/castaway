@@ -2,13 +2,15 @@
  * - plugins to port
  *   - steering
  *   - roadRunner
- *   - spawn
  *   - hordeSpawn
  *   - repulsor
  */
 const TARGET_FPS = 60;
 const TARGET_DURATION = 1000 / TARGET_FPS;
 const MAX_UPDATE_CATCHUP_FRAMES = 5;
+
+export const MSG_ENTITY_INSERT = 'entity_insert';
+export const MSG_ENTITY_DESTROY = 'entity_destroy';
 
 const UPDATE_METHODS = ['Start', '', 'End'].map(n => `update${n}`);
 const DRAW_METHODS = ['Start', '', 'End'].map(n => `draw${n}`);
@@ -250,7 +252,7 @@ export const World = {
         module = world.modules.components[name];
         world.components[name][entityId] = module.create(item[name]);
       }
-      // if (this.world) this.world.publish(Messages.ENTITY_INSERT, entityId);
+      World.send(world, MSG_ENTITY_INSERT, entityId);
       out.push(entityId);
     }
     return out.length > 1 ? out : out[0];
@@ -258,7 +260,8 @@ export const World = {
 
   destroy (world, entityId) {
     let name;
-    // if (this.world) this.world.publish(Messages.ENTITY_DESTROY, entityId);
+    // TODO: figure out how this can be useful, if all the entity's components are gone
+    World.send(world, MSG_ENTITY_DESTROY, entityId);
     for (name in world.components) {
       if (entityId in world.components[name]) {
         delete world.components[name][entityId];
